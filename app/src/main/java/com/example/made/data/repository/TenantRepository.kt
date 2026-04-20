@@ -46,4 +46,13 @@ class TenantRepository {
             Result.failure(e)
         }
     }
+
+    suspend fun getAllPayments(token: String): Result<List<Payment>> {
+        return try {
+            val payments = api.getPayments("Bearer $token")
+            Result.success(payments)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

@@ -10,7 +10,7 @@
         android:layout_width="match_parent" android:layout_height="wrap_content">
         <ImageView android:id="@+id/ivPropertyImage"
             android:layout_width="0dp" android:layout_height="160dp"
-            android:scaleType="centerCrop" android:background="@color/colorSurfaceVariant"
+            android:scaleType="centerCrop" android:background="@drawable/bg_app_surface"
             android:contentDescription="Property"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintStart_toStartOf="parent"
@@ -49,7 +49,7 @@
         <TextView android:id="@+id/tvOccupancyValue"
             android:layout_width="wrap_content" android:layout_height="wrap_content"
             android:layout_marginEnd="16dp" android:text="100%"
-            android:textColor="@color/colorSecondary" android:textSize="20sp" android:textStyle="bold"
+            android:textColor="@color/colorPrimary" android:textSize="20sp" android:textStyle="bold"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/tvOccupancyLabel" />
         <LinearLayout

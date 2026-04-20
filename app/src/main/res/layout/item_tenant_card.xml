@@ -5,7 +5,7 @@
     android:layout_width="match_parent" android:layout_height="wrap_content"
     android:layout_marginBottom="12dp">
     <androidx.constraintlayout.widget.ConstraintLayout
-        android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="16dp">
+        android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="18dp">
         <TextView android:id="@+id/tvAvatar"
             android:layout_width="44dp" android:layout_height="44dp"
             android:gravity="center" android:textColor="@color/colorTextPrimary"
@@ -29,7 +29,8 @@
             app:layout_constraintTop_toBottomOf="@+id/tvTenantName" />
         <TextView android:id="@+id/tvRentAmount"
             android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:textColor="@color/colorTextPrimary" android:textSize="16sp" android:textStyle="bold"
+            android:textColor="@color/colorPrimary" android:textSize="16sp" android:textStyle="bold"
+            android:fontFamily="serif"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
         <TextView android:id="@+id/tvStatus"

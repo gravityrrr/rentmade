@@ -1,5 +1,6 @@
 package com.example.made.ui.property
 
+import android.app.ActivityOptions
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.viewModels
@@ -8,6 +9,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.made.R
 import com.example.made.databinding.ActivityPropertyPortfolioBinding
 import com.example.made.ui.dashboard.DashboardActivity
+import com.example.made.ui.settings.SettingsActivity
 import com.example.made.ui.tenant.TenantStatusActivity
 import com.example.made.util.SessionManager
 
@@ -33,19 +35,28 @@ class PropertyPortfolioActivity : AppCompatActivity() {
         binding.bottomNav.selectedItemId = R.id.nav_properties
         binding.bottomNav.setOnItemSelectedListener { item ->
             when (item.itemId) {
-                R.id.nav_dashboard -> { startActivity(Intent(this, DashboardActivity::class.java)); finish(); true }
+                R.id.nav_dashboard -> { startInstant(DashboardActivity::class.java); true }
                 R.id.nav_properties -> true
-                R.id.nav_tenants -> { startActivity(Intent(this, TenantStatusActivity::class.java)); finish(); true }
-                R.id.nav_setup -> { startActivity(Intent(this, AddPropertyActivity::class.java)); true }
+                R.id.nav_tenants -> { startInstant(TenantStatusActivity::class.java); true }
+                R.id.nav_setup -> { startInstant(SettingsActivity::class.java); true }
                 else -> false
             }
         }
         viewModel.properties.observe(this) { props ->
             propertyAdapter.submitList(props)
+            binding.rvProperties.scheduleLayoutAnimation()
             binding.tvTotalAssets.text = props.size.toString()
             val avg = if (props.isNotEmpty()) (props.sumOf { it.occupancy_rate } / props.size * 100).toInt() else 0
             binding.tvAvgOccupancy.text = "$avg%"
         }
         viewModel.loadProperties(SessionManager(this).authToken ?: "")
+    }
+
+    private fun startInstant(target: Class<*>) {
+        val intent = Intent(this, target)
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        val options = ActivityOptions.makeCustomAnimation(this, 0, 0).toBundle()
+        startActivity(intent, options)
+        finish()
     }
 }

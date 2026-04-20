@@ -1,6 +1,7 @@
 package com.example.made.ui.splash
 
 import android.annotation.SuppressLint
+import android.app.ActivityOptions
 import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
@@ -10,6 +11,7 @@ import android.view.animation.AnimationSet
 import android.view.animation.TranslateAnimation
 import androidx.appcompat.app.AppCompatActivity
 import com.example.made.databinding.ActivitySplashBinding
+import com.example.made.ui.admin.AdminDashboardActivity
 import com.example.made.ui.auth.LoginActivity
 import com.example.made.ui.dashboard.DashboardActivity
 import com.example.made.util.Constants
@@ -27,6 +29,14 @@ class SplashActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         sessionManager = SessionManager(this)
+
+        if (intent?.data != null) {
+            val loginIntent = Intent(this, LoginActivity::class.java)
+            startActivity(loginIntent)
+            finish()
+            return
+        }
+
         animateSplash()
 
         Handler(Looper.getMainLooper()).postDelayed({
@@ -49,13 +59,17 @@ class SplashActivity : AppCompatActivity() {
     }
 
     private fun navigateToNext() {
-        val destination = if (sessionManager.isLoggedIn) {
+        val destination = if (sessionManager.isLoggedIn && sessionManager.isAdminUser) {
+            Intent(this, AdminDashboardActivity::class.java)
+        } else if (sessionManager.isLoggedIn) {
             Intent(this, DashboardActivity::class.java)
         } else {
             Intent(this, LoginActivity::class.java)
         }
-        startActivity(destination)
+        val options = ActivityOptions
+            .makeSceneTransitionAnimation(this, binding.ivLogo, "app_logo_transition")
+            .toBundle()
+        startActivity(destination, options)
         finish()
-        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
     }
 }

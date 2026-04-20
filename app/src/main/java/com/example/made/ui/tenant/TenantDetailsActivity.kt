@@ -4,11 +4,12 @@ import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.example.made.data.model.Payment
+import com.google.android.material.transition.platform.MaterialFadeThrough
 import com.example.made.data.repository.TenantRepository
 import com.example.made.databinding.ActivityTenantDetailsBinding
 import com.example.made.util.Constants
 import com.example.made.util.SessionManager
+import com.example.made.util.toast
 import kotlinx.coroutines.launch
 
 class TenantDetailsActivity : AppCompatActivity() {
@@ -17,8 +18,12 @@ class TenantDetailsActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        setupWindowTransitions()
         binding = ActivityTenantDetailsBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        binding.root.alpha = 0f
+        binding.root.translationY = 18f
+        binding.root.animate().alpha(1f).translationY(0f).setDuration(300L).start()
 
         val tenantId = intent.getStringExtra(Constants.EXTRA_TENANT_ID) ?: ""
         val tenantName = intent.getStringExtra(Constants.EXTRA_TENANT_NAME) ?: ""
@@ -45,24 +50,22 @@ class TenantDetailsActivity : AppCompatActivity() {
                     binding.tvPhone.text = it.phone
                     binding.tvUnitProperty.text = "${it.unit_number} · ${it.property_name}".uppercase()
                 }
-            }.onFailure { loadDemoDetails() }
+            }.onFailure {
+                toast("Unable to load tenant details")
+            }
 
             repo.getPaymentsByTenant(sm.authToken ?: "", tenantId).onSuccess {
                 paymentAdapter.submitList(it)
-            }.onFailure { loadDemoPayments() }
+                binding.rvPayments.scheduleLayoutAnimation()
+            }.onFailure {
+                paymentAdapter.submitList(emptyList())
+                toast("Unable to load payments")
+            }
         }
     }
 
-    private fun loadDemoDetails() {
-        binding.tvUnitProperty.text = "APT 4B · THE LUMINA"
-        binding.tvEmail.text = "elena.r@example.com"
-    }
-
-    private fun loadDemoPayments() {
-        paymentAdapter.submitList(listOf(
-            Payment(id="1",tenant_id="4",amount=3450.0,payment_date="Oct 28, 2023",month_label="November",status="paid"),
-            Payment(id="2",tenant_id="4",amount=3450.0,payment_date="Sep 29, 2023",month_label="October",status="paid"),
-            Payment(id="3",tenant_id="4",amount=3450.0,payment_date="Aug 30, 2023",month_label="September",status="paid")
-        ))
+    private fun setupWindowTransitions() {
+        window.enterTransition = MaterialFadeThrough().apply { duration = 260L }
+        window.returnTransition = MaterialFadeThrough().apply { duration = 220L }
     }
 }

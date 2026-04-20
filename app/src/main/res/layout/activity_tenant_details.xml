@@ -2,7 +2,8 @@
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent" android:layout_height="match_parent"
-    android:background="@color/colorBackground">
+    android:background="@drawable/bg_app_surface"
+    android:fitsSystemWindows="true">
     <ScrollView android:layout_width="0dp" android:layout_height="0dp" android:scrollbars="none"
         app:layout_constraintTop_toTopOf="parent" app:layout_constraintBottom_toTopOf="@+id/bottomNav"
         app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toEndOf="parent">
@@ -21,7 +22,7 @@
                 android:layout_width="wrap_content" android:layout_height="wrap_content"
                 android:layout_marginTop="4dp" style="@style/TextAppearance.Made.HeadlineXL" />
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:orientation="horizontal" android:layout_marginTop="16dp" android:gravity="centerVertical">
+                android:orientation="horizontal" android:layout_marginTop="16dp" android:gravity="center_vertical">
                 <ImageView android:layout_width="16dp" android:layout_height="16dp"
                     android:src="@drawable/ic_email" android:contentDescription="Email" />
                 <TextView android:id="@+id/tvEmail"
@@ -29,7 +30,7 @@
                     android:layout_marginStart="8dp" style="@style/TextAppearance.Made.BodyMd" />
             </LinearLayout>
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:orientation="horizontal" android:layout_marginTop="8dp" android:gravity="centerVertical">
+                android:orientation="horizontal" android:layout_marginTop="8dp" android:gravity="center_vertical">
                 <ImageView android:layout_width="16dp" android:layout_height="16dp"
                     android:src="@drawable/ic_phone" android:contentDescription="Phone" />
                 <TextView android:id="@+id/tvPhone"
@@ -52,14 +53,15 @@
             </androidx.constraintlayout.widget.ConstraintLayout>
             <androidx.recyclerview.widget.RecyclerView android:id="@+id/rvPayments"
                 android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:nestedScrollingEnabled="false" />
+                android:nestedScrollingEnabled="false"
+                android:layoutAnimation="@anim/layout_staggered_in" />
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                 android:layout_marginTop="32dp" android:layout_marginBottom="16dp"
                 android:text="@string/documents" style="@style/TextAppearance.Made.HeadlineMd" />
             <com.google.android.material.card.MaterialCardView style="@style/Widget.Made.Card"
                 android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="8dp">
                 <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-                    android:padding="16dp" android:gravity="centerVertical">
+                    android:padding="16dp" android:gravity="center_vertical">
                     <ImageView android:layout_width="40dp" android:layout_height="40dp"
                         android:src="@drawable/ic_document" android:padding="8dp"
                         android:background="@drawable/bg_status_pill_overdue" android:contentDescription="Doc" />
@@ -79,8 +81,8 @@
     <com.google.android.material.bottomnavigation.BottomNavigationView android:id="@+id/bottomNav"
         android:layout_width="0dp" android:layout_height="@dimen/bottom_nav_height"
         android:background="@drawable/bg_bottom_nav" app:menu="@menu/bottom_nav_menu"
-        app:itemIconTint="@color/colorTextMuted" app:itemTextColor="@color/colorTextMuted"
-        app:labelVisibilityMode="labeled"
+        app:itemIconTint="@color/bottom_nav_item_tint" app:itemTextColor="@color/bottom_nav_item_tint"
+        app:labelVisibilityMode="selected"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toEndOf="parent" />
 </androidx.constraintlayout.widget.ConstraintLayout>

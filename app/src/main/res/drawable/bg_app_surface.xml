@@ -3,30 +3,30 @@
     <item>
         <shape android:shape="rectangle">
             <gradient
-                android:angle="300"
-                android:startColor="@color/colorBackground"
-                android:centerColor="@color/colorBackgroundElevated"
-                android:endColor="#FF06070B" />
+                android:angle="315"
+                android:startColor="#FF090B12"
+                android:centerColor="#FF0D1220"
+                android:endColor="#FF07090E" />
         </shape>
     </item>
-    <item android:top="-120dp" android:left="-80dp" android:right="40dp" android:bottom="260dp">
+    <item android:top="-180dp" android:left="-120dp" android:right="120dp" android:bottom="420dp">
         <shape android:shape="oval">
             <gradient
                 android:type="radial"
                 android:gradientRadius="360dp"
-                android:centerX="0.32"
-                android:centerY="0.2"
-                android:startColor="#40D6B46D"
+                android:centerX="0.25"
+                android:centerY="0.15"
+                android:startColor="#33D6B46D"
                 android:endColor="#00090B12" />
         </shape>
     </item>
-    <item android:top="220dp" android:left="80dp" android:right="-120dp" android:bottom="-280dp">
+    <item android:top="220dp" android:left="80dp" android:right="-120dp" android:bottom="-300dp">
         <shape android:shape="oval">
             <gradient
                 android:type="radial"
                 android:gradientRadius="420dp"
-                android:centerX="0.78"
-                android:centerY="0.78"
+                android:centerX="0.8"
+                android:centerY="0.75"
                 android:startColor="#2266D9EF"
                 android:endColor="#00090B12" />
         </shape>

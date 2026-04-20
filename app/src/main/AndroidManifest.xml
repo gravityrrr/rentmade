@@ -24,14 +24,22 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="made" android:host="auth" android:pathPrefix="/callback" />
+            </intent-filter>
         </activity>
 
         <activity android:name=".ui.auth.LoginActivity" />
         <activity android:name=".ui.auth.SignupActivity" />
-        <activity android:name=".ui.dashboard.DashboardActivity" />
-        <activity android:name=".ui.property.PropertyPortfolioActivity" />
+        <activity android:name=".ui.admin.AdminDashboardActivity" />
+        <activity android:name=".ui.dashboard.DashboardActivity" android:launchMode="singleTop" />
+        <activity android:name=".ui.property.PropertyPortfolioActivity" android:launchMode="singleTop" />
         <activity android:name=".ui.property.AddPropertyActivity" />
-        <activity android:name=".ui.tenant.TenantStatusActivity" />
+        <activity android:name=".ui.settings.SettingsActivity" android:launchMode="singleTop" />
+        <activity android:name=".ui.tenant.TenantStatusActivity" android:launchMode="singleTop" />
         <activity android:name=".ui.tenant.TenantDetailsActivity" />
 
     </application>

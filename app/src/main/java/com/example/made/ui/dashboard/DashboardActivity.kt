@@ -1,10 +1,12 @@
 package com.example.made.ui.dashboard
 
+import android.app.ActivityOptions
 import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
@@ -13,8 +15,8 @@ import com.example.made.R
 import com.example.made.databinding.ActivityDashboardBinding
 import com.example.made.ui.calendar.DayCellBinder
 import com.example.made.ui.calendar.RentDueBottomSheetFragment
-import com.example.made.ui.property.AddPropertyActivity
 import com.example.made.ui.property.PropertyPortfolioActivity
+import com.example.made.ui.settings.SettingsActivity
 import com.example.made.ui.tenant.TenantAdapter
 import com.example.made.ui.tenant.TenantDetailsActivity
 import com.example.made.ui.tenant.TenantStatusActivity
@@ -39,6 +41,7 @@ class DashboardActivity : AppCompatActivity() {
     private lateinit var sessionManager: SessionManager
     private val viewModel: DashboardViewModel by viewModels()
     private lateinit var tenantAdapter: TenantAdapter
+    private var chartLabels: List<String> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -75,22 +78,23 @@ class DashboardActivity : AppCompatActivity() {
     }
 
     private fun setupLineChart() {
-        val entries = listOf(
-            Entry(0f,28000f), Entry(1f,32000f), Entry(2f,30000f),
-            Entry(3f,35000f), Entry(4f,33000f), Entry(5f,38000f), Entry(6f,42000f)
-        )
-        val dataSet = LineDataSet(entries, "Revenue").apply {
-            color = Color.parseColor("#7C5CFC")
+        val lineColor = ContextCompat.getColor(this, R.color.colorChartLine)
+        val chartFillColor = ContextCompat.getColor(this, R.color.colorChartFill)
+        val accentColor = ContextCompat.getColor(this, R.color.colorChartAccent)
+        val textMuted = ContextCompat.getColor(this, R.color.colorTextMuted)
+        val chartGridColor = ContextCompat.getColor(this, R.color.colorDivider)
+        val dataSet = LineDataSet(emptyList(), "Revenue").apply {
+            color = lineColor
             lineWidth = 2.5f
             setDrawCircles(true)
-            setCircleColor(Color.parseColor("#7C5CFC"))
+            setCircleColor(accentColor)
             circleRadius = 4f
             setDrawCircleHole(true)
-            circleHoleColor = Color.parseColor("#1C1C22")
+            circleHoleColor = ContextCompat.getColor(this@DashboardActivity, R.color.colorSurface)
             circleHoleRadius = 2f
             setDrawValues(false)
             setDrawFilled(true)
-            fillColor = Color.parseColor("#7C5CFC")
+            fillColor = chartFillColor
             fillAlpha = 25
             mode = LineDataSet.Mode.CUBIC_BEZIER
         }
@@ -106,24 +110,47 @@ class DashboardActivity : AppCompatActivity() {
             xAxis.apply {
                 position = XAxis.XAxisPosition.BOTTOM
                 setDrawGridLines(false)
-                textColor = Color.parseColor("#8E8E9A")
-                axisLineColor = Color.parseColor("#2E2E38")
+                textColor = textMuted
+                axisLineColor = chartGridColor
                 granularity = 1f
-                valueFormatter = IndexAxisValueFormatter(arrayOf("Apr","May","Jun","Jul","Aug","Sep","Oct"))
+                valueFormatter = IndexAxisValueFormatter(emptyList())
             }
             axisLeft.apply {
                 setDrawGridLines(true)
-                gridColor = Color.parseColor("#1E1E26")
-                textColor = Color.parseColor("#8E8E9A")
+                gridColor = chartGridColor
+                textColor = textMuted
                 axisLineColor = Color.TRANSPARENT
                 valueFormatter = object : ValueFormatter() {
                     override fun getFormattedValue(value: Float) = "$${(value/1000).toInt()}K"
                 }
             }
             axisRight.isEnabled = false
-            animateX(1000)
             invalidate()
         }
+    }
+
+    private fun updateLineChart(labels: List<String>, values: List<Float>) {
+        chartLabels = labels
+        val entries = values.mapIndexed { index, value -> Entry(index.toFloat(), value) }
+        val dataSet = LineDataSet(entries, "Revenue")
+        binding.lineChart.xAxis.valueFormatter = IndexAxisValueFormatter(labels)
+        binding.lineChart.data = LineData(dataSet.apply {
+            color = ContextCompat.getColor(this@DashboardActivity, R.color.colorChartLine)
+            lineWidth = 2.5f
+            setDrawCircles(true)
+            setCircleColor(ContextCompat.getColor(this@DashboardActivity, R.color.colorChartAccent))
+            circleRadius = 4f
+            setDrawCircleHole(true)
+            circleHoleColor = ContextCompat.getColor(this@DashboardActivity, R.color.colorSurface)
+            circleHoleRadius = 2f
+            setDrawValues(false)
+            setDrawFilled(true)
+            fillColor = ContextCompat.getColor(this@DashboardActivity, R.color.colorChartFill)
+            fillAlpha = 35
+            mode = LineDataSet.Mode.CUBIC_BEZIER
+        })
+        binding.lineChart.animateX(500)
+        binding.lineChart.invalidate()
     }
 
     private fun setupCalendar() {
@@ -145,9 +172,9 @@ class DashboardActivity : AppCompatActivity() {
         binding.bottomNav.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_dashboard -> true
-                R.id.nav_properties -> { startActivity(Intent(this, PropertyPortfolioActivity::class.java)); true }
-                R.id.nav_tenants -> { startActivity(Intent(this, TenantStatusActivity::class.java)); true }
-                R.id.nav_setup -> { startActivity(Intent(this, AddPropertyActivity::class.java)); true }
+                R.id.nav_properties -> { startInstant(PropertyPortfolioActivity::class.java); true }
+                R.id.nav_tenants -> { startInstant(TenantStatusActivity::class.java); true }
+                R.id.nav_setup -> { startInstant(SettingsActivity::class.java); true }
                 else -> false
             }
         }
@@ -169,6 +196,20 @@ class DashboardActivity : AppCompatActivity() {
             binding.tvPendingCount.text = "$pending TENANTS PENDING"
             binding.tvActiveLeases.text = "Across ${tenants.size} Active Leases"
         }
+        viewModel.revenueLabels.observe(this) { labels ->
+            updateLineChart(labels, viewModel.revenueValues.value ?: emptyList())
+        }
+        viewModel.revenueValues.observe(this) { values ->
+            updateLineChart(viewModel.revenueLabels.value ?: emptyList(), values)
+        }
+    }
+
+    private fun startInstant(target: Class<*>) {
+        val intent = Intent(this, target)
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        val options = ActivityOptions.makeCustomAnimation(this, 0, 0).toBundle()
+        startActivity(intent, options)
+        finish()
     }
 
     private fun scheduleRentReminder() {

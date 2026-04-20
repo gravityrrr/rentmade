@@ -2,7 +2,8 @@
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent" android:layout_height="match_parent"
-    android:background="@color/colorBackground">
+    android:background="@drawable/bg_app_surface"
+    android:fitsSystemWindows="true">
     <ScrollView android:layout_width="0dp" android:layout_height="0dp" android:scrollbars="none"
         app:layout_constraintTop_toTopOf="parent" app:layout_constraintBottom_toTopOf="@+id/bottomNav"
         app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toEndOf="parent">
@@ -75,15 +76,16 @@
                 style="@style/TextAppearance.Made.HeadlineMd" />
             <androidx.recyclerview.widget.RecyclerView android:id="@+id/rvTenants"
                 android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:nestedScrollingEnabled="false" />
+                android:nestedScrollingEnabled="false"
+                android:layoutAnimation="@anim/layout_staggered_in" />
             <View android:layout_width="match_parent" android:layout_height="16dp" />
         </LinearLayout>
     </ScrollView>
     <com.google.android.material.bottomnavigation.BottomNavigationView android:id="@+id/bottomNav"
         android:layout_width="0dp" android:layout_height="@dimen/bottom_nav_height"
         android:background="@drawable/bg_bottom_nav" app:menu="@menu/bottom_nav_menu"
-        app:itemIconTint="@color/colorTextMuted" app:itemTextColor="@color/colorTextMuted"
-        app:labelVisibilityMode="labeled"
+        app:itemIconTint="@color/bottom_nav_item_tint" app:itemTextColor="@color/bottom_nav_item_tint"
+        app:labelVisibilityMode="selected"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toEndOf="parent" />
 </androidx.constraintlayout.widget.ConstraintLayout>

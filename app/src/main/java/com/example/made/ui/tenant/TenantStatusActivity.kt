@@ -1,5 +1,6 @@
 package com.example.made.ui.tenant
 
+import android.app.ActivityOptions
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.viewModels
@@ -8,8 +9,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.made.R
 import com.example.made.databinding.ActivityTenantStatusBinding
 import com.example.made.ui.dashboard.DashboardActivity
-import com.example.made.ui.property.AddPropertyActivity
 import com.example.made.ui.property.PropertyPortfolioActivity
+import com.example.made.ui.settings.SettingsActivity
 import com.example.made.util.Constants
 import com.example.made.util.SessionManager
 import com.example.made.util.toCurrency
@@ -40,15 +41,16 @@ class TenantStatusActivity : AppCompatActivity() {
         binding.bottomNav.selectedItemId = R.id.nav_tenants
         binding.bottomNav.setOnItemSelectedListener { item ->
             when (item.itemId) {
-                R.id.nav_dashboard -> { startActivity(Intent(this, DashboardActivity::class.java)); finish(); true }
-                R.id.nav_properties -> { startActivity(Intent(this, PropertyPortfolioActivity::class.java)); finish(); true }
+                R.id.nav_dashboard -> { startInstant(DashboardActivity::class.java); true }
+                R.id.nav_properties -> { startInstant(PropertyPortfolioActivity::class.java); true }
                 R.id.nav_tenants -> true
-                R.id.nav_setup -> { startActivity(Intent(this, AddPropertyActivity::class.java)); true }
+                R.id.nav_setup -> { startInstant(SettingsActivity::class.java); true }
                 else -> false
             }
         }
         viewModel.tenants.observe(this) { tenants ->
             tenantAdapter.submitList(tenants)
+            binding.rvTenants.scheduleLayoutAnimation()
             val expected = tenants.sumOf { it.monthly_rent }
             val collected = tenants.filter { it.payment_status == "paid" }.sumOf { it.monthly_rent }
             val pct = if (expected > 0) ((collected / expected) * 100).toInt() else 0
@@ -61,5 +63,13 @@ class TenantStatusActivity : AppCompatActivity() {
             binding.tvPercent.text = "$pct%"
         }
         viewModel.loadTenants(SessionManager(this).authToken ?: "")
+    }
+
+    private fun startInstant(target: Class<*>) {
+        val intent = Intent(this, target)
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        val options = ActivityOptions.makeCustomAnimation(this, 0, 0).toBundle()
+        startActivity(intent, options)
+        finish()
     }
 }

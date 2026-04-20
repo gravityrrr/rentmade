@@ -2,6 +2,7 @@ package com.example.made.util
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.example.made.data.remote.SupabaseConfig
 
 class SessionManager(context: Context) {
 
@@ -12,6 +13,8 @@ class SessionManager(context: Context) {
         private const val KEY_USER_NAME = "user_name"
         private const val KEY_USER_ID = "user_id"
         private const val KEY_AUTH_TOKEN = "auth_token"
+        private const val KEY_COMPACT_MODE = "compact_mode"
+        private const val KEY_RENT_REMINDERS = "rent_reminders"
     }
 
     private val prefs: SharedPreferences =
@@ -36,6 +39,17 @@ class SessionManager(context: Context) {
     var authToken: String?
         get() = prefs.getString(KEY_AUTH_TOKEN, null)
         set(value) = prefs.edit().putString(KEY_AUTH_TOKEN, value).apply()
+
+    var compactMode: Boolean
+        get() = prefs.getBoolean(KEY_COMPACT_MODE, false)
+        set(value) = prefs.edit().putBoolean(KEY_COMPACT_MODE, value).apply()
+
+    var rentRemindersEnabled: Boolean
+        get() = prefs.getBoolean(KEY_RENT_REMINDERS, true)
+        set(value) = prefs.edit().putBoolean(KEY_RENT_REMINDERS, value).apply()
+
+    val isAdminUser: Boolean
+        get() = userEmail.equals(SupabaseConfig.ADMIN_EMAIL, ignoreCase = true)
 
     fun saveLoginSession(userId: String, email: String, name: String, token: String) {
         prefs.edit().apply {

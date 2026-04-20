@@ -1,16 +1,19 @@
 package com.example.made.ui.auth
 
+import android.app.ActivityOptions
 import android.content.Intent
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityOptionsCompat
 import androidx.lifecycle.lifecycleScope
 import com.example.made.databinding.ActivitySignupBinding
 import com.example.made.data.remote.RetrofitClient
-import com.example.made.ui.dashboard.DashboardActivity
+import com.example.made.data.remote.SupabaseConfig
 import com.example.made.util.SessionManager
 import com.example.made.util.hide
 import com.example.made.util.show
 import com.example.made.util.toast
+import com.google.android.material.transition.platform.MaterialSharedAxis
 import kotlinx.coroutines.launch
 
 class SignupActivity : AppCompatActivity() {
@@ -20,10 +23,18 @@ class SignupActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        setupWindowTransitions()
         binding = ActivitySignupBinding.inflate(layoutInflater)
         setContentView(binding.root)
         sessionManager = SessionManager(this)
         setupClickListeners()
+    }
+
+    private fun setupWindowTransitions() {
+        window.enterTransition = MaterialSharedAxis(MaterialSharedAxis.X, true).apply { duration = 280L }
+        window.returnTransition = MaterialSharedAxis(MaterialSharedAxis.X, false).apply { duration = 220L }
+        window.exitTransition = MaterialSharedAxis(MaterialSharedAxis.X, true).apply { duration = 220L }
+        window.reenterTransition = MaterialSharedAxis(MaterialSharedAxis.X, false).apply { duration = 220L }
     }
 
     private fun setupClickListeners() {
@@ -37,7 +48,16 @@ class SignupActivity : AppCompatActivity() {
                 performSignup(name, email, password)
             }
         }
-        binding.tvLoginLink.setOnClickListener { finish() }
+        binding.tvLoginLink.setOnClickListener {
+            val intent = Intent(this, LoginActivity::class.java)
+            val options = ActivityOptionsCompat.makeSceneTransitionAnimation(
+                this,
+                binding.ivSignupLogo,
+                "app_logo_transition"
+            )
+            startActivity(intent, options.toBundle())
+            finish()
+        }
     }
 
     private fun validateInputs(name: String, email: String, phone: String, pw: String, confirm: String): Boolean {
@@ -59,20 +79,21 @@ class SignupActivity : AppCompatActivity() {
         lifecycleScope.launch {
             try {
                 val response = RetrofitClient.api.signUp(
-                    credentials = mapOf("email" to email, "password" to password)
+                    credentials = mapOf(
+                        "email" to email,
+                        "password" to password,
+                        "data" to mapOf("full_name" to name),
+                        "options" to mapOf("emailRedirectTo" to SupabaseConfig.EMAIL_CONFIRM_REDIRECT)
+                    )
                 )
                 if (response.isSuccessful) {
-                    val body = response.body()
-                    val token = body?.get("access_token")?.toString() ?: ""
-                    val userId = (body?.get("user") as? Map<*, *>)?.get("id")?.toString() ?: ""
-                    sessionManager.saveLoginSession(userId, email, name, token)
-                    navigateToDashboard()
+                    toast("Check your email for confirmation link before logging in.")
+                    navigateToLoginWithTransition()
                 } else {
                     toast("Signup failed. Please try again.")
                 }
             } catch (e: Exception) {
-                sessionManager.saveLoginSession("demo-001", email, name, "demo-token")
-                navigateToDashboard()
+                toast("Signup failed. Please try again.")
             } finally {
                 binding.btnSignup.isEnabled = true
                 binding.progressSignup.hide()
@@ -80,10 +101,12 @@ class SignupActivity : AppCompatActivity() {
         }
     }
 
-    private fun navigateToDashboard() {
-        val intent = Intent(this, DashboardActivity::class.java)
-        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        startActivity(intent)
+    private fun navigateToLoginWithTransition() {
+        val intent = Intent(this, LoginActivity::class.java)
+        val options = ActivityOptions
+            .makeSceneTransitionAnimation(this, binding.ivSignupLogo, "app_logo_transition")
+            .toBundle()
+        startActivity(intent, options)
         finish()
     }
 }

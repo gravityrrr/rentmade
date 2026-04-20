@@ -3,6 +3,7 @@ package com.example.made.ui.property
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
+import com.google.android.material.transition.platform.MaterialFadeThrough
 import com.example.made.data.model.Property
 import com.example.made.data.repository.PropertyRepository
 import com.example.made.databinding.ActivityAddPropertyBinding
@@ -16,12 +17,21 @@ class AddPropertyActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        setupWindowTransitions()
         binding = ActivityAddPropertyBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        binding.root.alpha = 0f
+        binding.root.translationY = 18f
+        binding.root.animate().alpha(1f).translationY(0f).setDuration(300L).start()
 
         binding.btnCancel.setOnClickListener { finish() }
         binding.cardImageUpload.setOnClickListener { toast("Image upload coming soon") }
         binding.btnSaveProperty.setOnClickListener { saveProperty() }
+    }
+
+    private fun setupWindowTransitions() {
+        window.enterTransition = MaterialFadeThrough().apply { duration = 260L }
+        window.returnTransition = MaterialFadeThrough().apply { duration = 220L }
     }
 
     private fun saveProperty() {

@@ -1,5 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+
+    <!-- Base parent styles (required for implicit parent resolution) -->
+    <style name="TextAppearance.Made" parent="TextAppearance.MaterialComponents.Body1">
+        <item name="android:textColor">@color/colorTextPrimary</item>
+    </style>
+
+    <style name="Widget.Made" parent="">
+    </style>
+
     <!-- Card Styles -->
     <style name="Widget.Made.Card" parent="Widget.MaterialComponents.CardView">
         <item name="cardBackgroundColor">@color/colorSurface</item>
@@ -8,6 +17,7 @@
         <item name="strokeWidth">@dimen/card_stroke_width</item>
         <item name="strokeColor">@color/colorStroke</item>
         <item name="contentPadding">@dimen/card_padding</item>
+        <item name="rippleColor">@color/colorPrimaryMuted</item>
     </style>
     <style name="Widget.Made.Card.Glow" parent="Widget.Made.Card">
         <item name="strokeColor">@color/colorNeonStroke</item>
@@ -22,9 +32,13 @@
         <item name="android:textSize">@dimen/text_body_md</item>
         <item name="android:textAllCaps">false</item>
         <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:letterSpacing">0.02</item>
         <item name="cornerRadius">@dimen/button_corner_radius</item>
         <item name="android:minHeight">@dimen/button_height</item>
-        <item name="backgroundTint">@color/colorPrimary</item>
+        <item name="android:background">@drawable/bg_button_primary</item>
+        <item name="backgroundTint">@null</item>
+        <item name="rippleColor">@color/colorPrimaryMuted</item>
+        <item name="elevation">4dp</item>
     </style>
     <style name="Widget.Made.Button.Secondary" parent="Widget.MaterialComponents.Button">
         <item name="android:textColor">@color/colorSecondary</item>
@@ -47,8 +61,9 @@
         <item name="boxCornerRadiusTopEnd">@dimen/input_corner_radius</item>
         <item name="boxCornerRadiusBottomStart">@dimen/input_corner_radius</item>
         <item name="boxCornerRadiusBottomEnd">@dimen/input_corner_radius</item>
-        <item name="boxStrokeColor">@color/colorStroke</item>
+        <item name="boxStrokeColor">@color/colorPrimary</item>
         <item name="boxStrokeWidth">1dp</item>
+        <item name="boxStrokeWidthFocused">2dp</item>
         <item name="hintTextColor">@color/colorTextMuted</item>
         <item name="android:textColorHint">@color/colorTextMuted</item>
     </style>
@@ -58,11 +73,13 @@
         <item name="android:textSize">@dimen/text_headline_xl</item>
         <item name="android:textColor">@color/colorTextPrimary</item>
         <item name="android:textStyle">bold</item>
+        <item name="android:fontFamily">serif</item>
     </style>
     <style name="TextAppearance.Made.HeadlineLg">
         <item name="android:textSize">@dimen/text_headline_lg</item>
         <item name="android:textColor">@color/colorTextPrimary</item>
         <item name="android:textStyle">bold</item>
+        <item name="android:fontFamily">serif</item>
     </style>
     <style name="TextAppearance.Made.HeadlineMd">
         <item name="android:textSize">@dimen/text_headline_md</item>
@@ -72,10 +89,12 @@
     <style name="TextAppearance.Made.BodyLg">
         <item name="android:textSize">@dimen/text_body_lg</item>
         <item name="android:textColor">@color/colorTextPrimary</item>
+        <item name="android:fontFamily">sans-serif</item>
     </style>
     <style name="TextAppearance.Made.BodyMd">
         <item name="android:textSize">@dimen/text_body_md</item>
         <item name="android:textColor">@color/colorTextSecondary</item>
+        <item name="android:fontFamily">sans-serif</item>
     </style>
     <style name="TextAppearance.Made.BodySm">
         <item name="android:textSize">@dimen/text_body_sm</item>
@@ -86,7 +105,7 @@
         <item name="android:textColor">@color/colorTextMuted</item>
         <item name="android:fontFamily">sans-serif-medium</item>
         <item name="android:textAllCaps">true</item>
-        <item name="android:letterSpacing">0.08</item>
+        <item name="android:letterSpacing">0.12</item>
     </style>
     <style name="TextAppearance.Made.MonoLg">
         <item name="android:textSize">@dimen/text_mono_lg</item>

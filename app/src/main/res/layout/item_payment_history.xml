@@ -5,7 +5,7 @@
     android:layout_width="match_parent" android:layout_height="wrap_content"
     android:layout_marginBottom="8dp">
     <androidx.constraintlayout.widget.ConstraintLayout
-        android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="16dp">
+        android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="18dp">
         <ImageView android:id="@+id/ivPaymentIcon"
             android:layout_width="40dp" android:layout_height="40dp"
             android:src="@drawable/ic_document" android:padding="8dp"
@@ -31,6 +31,7 @@
         <TextView android:id="@+id/tvPaymentAmount"
             android:layout_width="wrap_content" android:layout_height="wrap_content"
             android:textColor="@color/colorPrimary" android:textSize="16sp" android:textStyle="bold"
+            android:fontFamily="serif"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
         <TextView android:id="@+id/tvPaymentStatus"
