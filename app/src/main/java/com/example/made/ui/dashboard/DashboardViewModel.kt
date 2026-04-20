@@ -5,6 +5,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.made.data.model.Payment
+import com.example.made.data.model.Tenant
 import com.example.made.data.repository.TenantRepository
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -14,8 +15,8 @@ import java.util.Locale
 
 class DashboardViewModel : ViewModel() {
     private val tenantRepository = TenantRepository()
-    private val _tenants = MutableLiveData<List<com.example.made.data.model.Tenant>>()
-    val tenants: LiveData<List<com.example.made.data.model.Tenant>> = _tenants
+    private val _tenants = MutableLiveData<List<Tenant>>()
+    val tenants: LiveData<List<Tenant>> = _tenants
     private val _totalExpected = MutableLiveData<Double>()
     val totalExpected: LiveData<Double> = _totalExpected
     private val _totalCollected = MutableLiveData<Double>()
@@ -61,7 +62,7 @@ class DashboardViewModel : ViewModel() {
         }
     }
 
-    private fun calculateFinancials(tenants: List<com.example.made.data.model.Tenant>) {
+    private fun calculateFinancials(tenants: List<Tenant>) {
         val expected = tenants.sumOf { it.monthly_rent }
         val collected = tenants.filter { it.payment_status == "paid" }.sumOf { it.monthly_rent }
         _totalExpected.value = expected
@@ -78,10 +79,10 @@ class DashboardViewModel : ViewModel() {
             sorted[key] = (sorted[key] ?: 0.0) + payment.amount
         }
 
-        val labels = sorted.keys.takeLast(7).map {
+        val labels = sorted.keys.toList().takeLast(7).map {
             LocalDate.parse("$it-01").format(formatter)
         }
-        val values = sorted.values.takeLast(7).map { it.toFloat() }
+        val values = sorted.values.toList().takeLast(7).map { it.toFloat() }
         _revenueLabels.value = labels
         _revenueValues.value = values
     }

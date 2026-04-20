@@ -15,6 +15,8 @@ class SessionManager(context: Context) {
         private const val KEY_AUTH_TOKEN = "auth_token"
         private const val KEY_COMPACT_MODE = "compact_mode"
         private const val KEY_RENT_REMINDERS = "rent_reminders"
+        private const val KEY_GRACE_DAYS = "grace_days"
+        private const val KEY_AUTO_OVERDUE = "auto_overdue"
     }
 
     private val prefs: SharedPreferences =
@@ -47,6 +49,14 @@ class SessionManager(context: Context) {
     var rentRemindersEnabled: Boolean
         get() = prefs.getBoolean(KEY_RENT_REMINDERS, true)
         set(value) = prefs.edit().putBoolean(KEY_RENT_REMINDERS, value).apply()
+
+    var graceDays: Int
+        get() = prefs.getInt(KEY_GRACE_DAYS, 3)
+        set(value) = prefs.edit().putInt(KEY_GRACE_DAYS, value.coerceAtLeast(0)).apply()
+
+    var autoOverdueEnabled: Boolean
+        get() = prefs.getBoolean(KEY_AUTO_OVERDUE, true)
+        set(value) = prefs.edit().putBoolean(KEY_AUTO_OVERDUE, value).apply()
 
     val isAdminUser: Boolean
         get() = userEmail.equals(SupabaseConfig.ADMIN_EMAIL, ignoreCase = true)

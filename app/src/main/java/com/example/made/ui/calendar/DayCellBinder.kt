@@ -15,9 +15,12 @@ class DayCellBinder(
     private val onDayClick: (CalendarDay) -> Unit
 ) : MonthDayBinder<DayCellBinder.DayViewContainer> {
 
-    // Demo: days with rent due (unpaid) and paid
-    private val unpaidDays = setOf(1, 5, 12, 18, 25)
-    private val paidDays = setOf(2, 3, 8, 15, 20, 22, 28)
+    private val dueDates = mutableSetOf<LocalDate>()
+
+    fun setDueDates(dates: Set<LocalDate>) {
+        dueDates.clear()
+        dueDates.addAll(dates)
+    }
 
     class DayViewContainer(view: View) : ViewContainer(view) {
         val tvDay: TextView = view.findViewById(R.id.tvDay)
@@ -32,19 +35,11 @@ class DayCellBinder(
         if (data.position == DayPosition.MonthDate) {
             container.tvDay.setTextColor(context.getColor(R.color.colorTextPrimary))
 
-            val dayOfMonth = data.date.dayOfMonth
-            when {
-                unpaidDays.contains(dayOfMonth) -> {
-                    container.vIndicator.visibility = View.VISIBLE
-                    container.vIndicator.setBackgroundResource(R.drawable.indicator_dot_red)
-                }
-                paidDays.contains(dayOfMonth) -> {
-                    container.vIndicator.visibility = View.VISIBLE
-                    container.vIndicator.setBackgroundResource(R.drawable.indicator_dot_green)
-                }
-                else -> {
-                    container.vIndicator.visibility = View.GONE
-                }
+            if (dueDates.contains(data.date)) {
+                container.vIndicator.visibility = View.VISIBLE
+                container.vIndicator.setBackgroundResource(R.drawable.indicator_dot_due)
+            } else {
+                container.vIndicator.visibility = View.GONE
             }
 
             // Highlight today

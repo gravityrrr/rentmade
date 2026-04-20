@@ -3,33 +3,42 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     style="@style/Widget.Made.Card"
     android:layout_width="match_parent" android:layout_height="wrap_content"
-    android:layout_marginBottom="12dp">
+    android:layout_marginBottom="8dp">
     <androidx.constraintlayout.widget.ConstraintLayout
-        android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="18dp">
+        android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="14dp">
         <TextView android:id="@+id/tvAvatar"
-            android:layout_width="44dp" android:layout_height="44dp"
+            android:layout_width="38dp" android:layout_height="38dp"
             android:gravity="center" android:textColor="@color/colorTextPrimary"
-            android:textSize="16sp" android:textStyle="bold"
+            android:textSize="13sp" android:textStyle="bold"
             android:background="@drawable/bg_status_pill_verified"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
         <TextView android:id="@+id/tvTenantName"
             android:layout_width="0dp" android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
-            style="@style/TextAppearance.Made.BodyLg" android:textStyle="bold"
+            android:layout_marginStart="10dp"
+            style="@style/TextAppearance.Made.BodyMd" android:textStyle="bold"
             android:textColor="@color/colorTextPrimary"
             app:layout_constraintStart_toEndOf="@+id/tvAvatar"
             app:layout_constraintEnd_toStartOf="@+id/tvRentAmount"
             app:layout_constraintTop_toTopOf="@+id/tvAvatar" />
         <TextView android:id="@+id/tvUnitInfo"
             android:layout_width="0dp" android:layout_height="wrap_content"
-            android:layout_marginStart="12dp" style="@style/TextAppearance.Made.BodySm"
+            android:layout_marginStart="10dp" style="@style/TextAppearance.Made.BodySm"
             app:layout_constraintStart_toEndOf="@+id/tvAvatar"
             app:layout_constraintEnd_toStartOf="@+id/tvRentAmount"
             app:layout_constraintTop_toBottomOf="@+id/tvTenantName" />
+        <TextView android:id="@+id/tvMetaInfo"
+            android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:layout_marginTop="2dp"
+            android:textColor="@color/colorTextMuted"
+            android:textSize="11sp"
+            app:layout_constraintStart_toEndOf="@+id/tvAvatar"
+            app:layout_constraintEnd_toStartOf="@+id/tvRentAmount"
+            app:layout_constraintTop_toBottomOf="@+id/tvUnitInfo" />
         <TextView android:id="@+id/tvRentAmount"
             android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:textColor="@color/colorPrimary" android:textSize="16sp" android:textStyle="bold"
+            android:textColor="@color/colorPrimary" android:textSize="14sp" android:textStyle="bold"
             android:fontFamily="serif"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
@@ -43,19 +52,19 @@
             app:layout_constraintTop_toBottomOf="@+id/tvRentAmount" />
         <LinearLayout android:id="@+id/actionButtons"
             android:layout_width="0dp" android:layout_height="wrap_content"
-            android:layout_marginTop="12dp" android:orientation="horizontal"
+            android:layout_marginTop="10dp" android:orientation="horizontal"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/tvAvatar">
+            app:layout_constraintTop_toBottomOf="@+id/tvMetaInfo">
             <com.google.android.material.button.MaterialButton android:id="@+id/btnMarkPaid"
                 style="@style/Widget.Made.Button.Secondary"
-                android:layout_width="0dp" android:layout_height="40dp"
+                android:layout_width="0dp" android:layout_height="36dp"
                 android:layout_weight="1" android:layout_marginEnd="8dp"
                 android:text="@string/mark_as_paid" android:textSize="12sp" android:minHeight="0dp" />
             <com.google.android.material.button.MaterialButton android:id="@+id/btnRemind"
                 style="@style/Widget.Made.Button.Text"
-                android:layout_width="wrap_content" android:layout_height="40dp"
-                android:text="@string/remind" android:textSize="12sp"
+                android:layout_width="wrap_content" android:layout_height="36dp"
+                android:text="@string/edit" android:textSize="12sp"
                 android:textColor="@color/colorPrimary" android:minHeight="0dp" />
         </LinearLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>

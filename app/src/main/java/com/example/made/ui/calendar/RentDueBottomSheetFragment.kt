@@ -1,5 +1,8 @@
 package com.example.made.ui.calendar
 
+import android.content.ActivityNotFoundException
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -9,11 +12,17 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.made.R
+import com.example.made.data.model.BillLedgerEntry
+import com.example.made.data.model.Payment
 import com.example.made.data.model.Tenant
 import com.example.made.data.repository.TenantRepository
+import com.example.made.util.Constants
 import com.example.made.util.SessionManager
+import com.example.made.util.toCurrency
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.util.UUID
 
 class RentDueBottomSheetFragment : BottomSheetDialogFragment() {
 
@@ -37,7 +46,10 @@ class RentDueBottomSheetFragment : BottomSheetDialogFragment() {
 
         val rv = view.findViewById<RecyclerView>(R.id.rvRentDue)
         rv.layoutManager = LinearLayoutManager(requireContext())
-        val adapter = RentDueAdapter()
+        val adapter = RentDueAdapter(
+            onMarkPaid = { tenant -> markAsPaid(tenant) },
+            onRemind = { tenant -> remindOrCall(tenant) }
+        )
         rv.adapter = adapter
 
         val token = SessionManager(requireContext()).authToken.orEmpty()
@@ -48,8 +60,14 @@ class RentDueBottomSheetFragment : BottomSheetDialogFragment() {
 
         viewLifecycleOwner.lifecycleScope.launch {
             TenantRepository().getTenants(token).onSuccess { tenants ->
+                val selectedDate = runCatching { LocalDate.parse(date) }.getOrNull()
                 val due = tenants.filter { tenant ->
-                    tenant.due_date == date && tenant.payment_status != "paid"
+                    if (tenant.payment_status == Constants.STATUS_PAID) {
+                        false
+                    } else {
+                        tenant.due_date == date ||
+                            (selectedDate != null && tenant.due_date.toIntOrNull() == selectedDate.dayOfMonth)
+                    }
                 }
                 adapter.submit(due)
             }.onFailure {
@@ -58,7 +76,85 @@ class RentDueBottomSheetFragment : BottomSheetDialogFragment() {
         }
     }
 
-    private class RentDueAdapter : RecyclerView.Adapter<RentDueAdapter.Holder>() {
+    private fun remindOrCall(tenant: Tenant) {
+        if (tenant.payment_status.equals(Constants.STATUS_OVERDUE, ignoreCase = true) || isPastDue(tenant)) {
+            startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:${tenant.phone}")))
+            return
+        }
+        val total = tenant.monthly_rent + tenant.water_bill + tenant.electricity_bill + tenant.trash_bill
+        val message = "Hi ${tenant.name}, reminder for upcoming dues. " +
+            "Rent: ${tenant.monthly_rent.toCurrency()}, Water: ${tenant.water_bill.toCurrency()}, " +
+            "Electricity: ${tenant.electricity_bill.toCurrency()}, Trash: ${tenant.trash_bill.toCurrency()}. " +
+            "Total: ${total.toCurrency()}."
+        val url = "https://wa.me/${tenant.phone.replace("+", "")}?text=${Uri.encode(message)}"
+        try {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+        } catch (_: ActivityNotFoundException) {
+        }
+    }
+
+    private fun markAsPaid(tenant: Tenant) {
+        val token = SessionManager(requireContext()).authToken.orEmpty()
+        viewLifecycleOwner.lifecycleScope.launch {
+            val repo = TenantRepository()
+            val now = LocalDate.now().toString()
+            val updated = repo.updateTenant(token, tenant.id, mapOf(
+                "payment_status" to Constants.STATUS_PAID,
+                "last_payment_date" to now
+            ))
+            if (updated.isSuccess) {
+                repo.addPayment(
+                    token,
+                    Payment(
+                        id = UUID.randomUUID().toString(),
+                        tenant_id = tenant.id,
+                        property_id = tenant.property_id,
+                        unit_id = tenant.unit_id,
+                        amount = tenant.monthly_rent + tenant.water_bill + tenant.electricity_bill + tenant.trash_bill,
+                        rent_amount = tenant.monthly_rent,
+                        water_amount = tenant.water_bill,
+                        electricity_amount = tenant.electricity_bill,
+                        trash_amount = tenant.trash_bill,
+                        payment_date = now,
+                        month_label = LocalDate.now().month.name.take(3),
+                        status = Constants.STATUS_PAID
+                    )
+                )
+                repo.addBillLedgerEntry(
+                    token,
+                    BillLedgerEntry(
+                        id = UUID.randomUUID().toString(),
+                        tenant_id = tenant.id,
+                        property_id = tenant.property_id,
+                        unit_id = tenant.unit_id,
+                        period_month = LocalDate.now().withDayOfMonth(1).toString(),
+                        due_date = tenant.due_date,
+                        rent_amount = tenant.monthly_rent,
+                        water_amount = tenant.water_bill,
+                        electricity_amount = tenant.electricity_bill,
+                        trash_amount = tenant.trash_bill,
+                        total_amount = tenant.monthly_rent + tenant.water_bill + tenant.electricity_bill + tenant.trash_bill,
+                        status = Constants.STATUS_PAID,
+                        paid_on = now
+                    )
+                )
+            }
+        }
+    }
+
+    private fun isPastDue(tenant: Tenant): Boolean {
+        if (tenant.payment_status.equals(Constants.STATUS_PAID, ignoreCase = true)) return false
+        val dueDate = runCatching { LocalDate.parse(tenant.due_date) }.getOrNull()
+        if (dueDate != null) return dueDate.isBefore(LocalDate.now())
+        val day = tenant.due_date.toIntOrNull() ?: return false
+        val thisMonth = LocalDate.now().withDayOfMonth(day.coerceIn(1, LocalDate.now().lengthOfMonth()))
+        return thisMonth.isBefore(LocalDate.now())
+    }
+
+    private class RentDueAdapter(
+        private val onMarkPaid: (Tenant) -> Unit,
+        private val onRemind: (Tenant) -> Unit
+    ) : RecyclerView.Adapter<RentDueAdapter.Holder>() {
         private val items = mutableListOf<Tenant>()
 
         fun submit(data: List<Tenant>) {
@@ -79,19 +175,21 @@ class RentDueBottomSheetFragment : BottomSheetDialogFragment() {
             holder.bind(items[position])
         }
 
-        class Holder(view: View) : RecyclerView.ViewHolder(view) {
+        inner class Holder(view: View) : RecyclerView.ViewHolder(view) {
             fun bind(tenant: Tenant) {
                 val initials = tenant.name.split(" ").take(2).joinToString("") { it.take(1).uppercase() }
                 itemView.findViewById<TextView>(R.id.tvAvatar).text = initials
                 itemView.findViewById<TextView>(R.id.tvTenantName).text = tenant.name
                 itemView.findViewById<TextView>(R.id.tvUnitInfo).text = "${tenant.unit_number} · ${tenant.property_name}"
-                itemView.findViewById<TextView>(R.id.tvRentAmount).text = "$${tenant.monthly_rent.toInt()}"
+                itemView.findViewById<TextView>(R.id.tvRentAmount).text = tenant.monthly_rent.toCurrency()
                 itemView.findViewById<TextView>(R.id.tvStatus).apply {
                     text = tenant.payment_status.uppercase()
                     setBackgroundResource(R.drawable.bg_status_pill_pending)
                     setTextColor(context.getColor(R.color.colorWarning))
                 }
-                itemView.findViewById<View>(R.id.actionButtons).visibility = View.GONE
+                itemView.findViewById<View>(R.id.actionButtons).visibility = View.VISIBLE
+                itemView.findViewById<View>(R.id.btnMarkPaid).setOnClickListener { onMarkPaid(tenant) }
+                itemView.findViewById<View>(R.id.btnRemind).setOnClickListener { onRemind(tenant) }
             }
         }
     }

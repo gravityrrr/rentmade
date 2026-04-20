@@ -8,72 +8,43 @@
         app:layout_constraintTop_toTopOf="parent" app:layout_constraintBottom_toTopOf="@+id/bottomNav"
         app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toEndOf="parent">
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:orientation="vertical" android:padding="20dp">
+            android:orientation="vertical" android:padding="18dp">
             <include android:id="@+id/headerLayout" layout="@layout/layout_header" />
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:layout_marginTop="24dp" android:text="@string/rent_collection_tracker"
+                android:layout_marginTop="20dp" android:text="@string/tenant_status"
                 style="@style/TextAppearance.Made.HeadlineLg" />
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:layout_marginTop="4dp" android:layout_marginBottom="20dp"
+                android:layout_marginTop="4dp" android:layout_marginBottom="16dp"
                 android:text="@string/current_month_overview" style="@style/TextAppearance.Made.BodyMd" />
-            <com.google.android.material.card.MaterialCardView style="@style/Widget.Made.Card"
-                android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="12dp">
-                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-                    android:orientation="vertical" android:padding="20dp">
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="@string/total_expected" style="@style/TextAppearance.Made.Label" />
-                    <TextView android:id="@+id/tvTotalExpected" android:layout_width="wrap_content"
-                        android:layout_height="wrap_content" android:layout_marginTop="8dp"
-                        android:text="$42,500" style="@style/TextAppearance.Made.MonoXL" />
-                    <TextView android:id="@+id/tvLeaseCount" android:layout_width="wrap_content"
-                        android:layout_height="wrap_content" android:layout_marginTop="4dp"
-                        style="@style/TextAppearance.Made.BodySm" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-            <com.google.android.material.card.MaterialCardView style="@style/Widget.Made.Card.Glow"
-                android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="12dp">
-                <androidx.constraintlayout.widget.ConstraintLayout android:layout_width="match_parent"
-                    android:layout_height="wrap_content" android:padding="20dp">
-                    <TextView android:id="@+id/lblC" android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="@string/collected" style="@style/TextAppearance.Made.Label"
-                        app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toTopOf="parent" />
-                    <TextView android:id="@+id/tvCollected" android:layout_width="wrap_content"
-                        android:layout_height="wrap_content" android:layout_marginTop="8dp"
-                        android:textColor="@color/colorSecondary" style="@style/TextAppearance.Made.MonoLg"
-                        app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toBottomOf="@+id/lblC" />
-                    <ProgressBar android:id="@+id/progressCollected" style="?android:attr/progressBarStyleHorizontal"
-                        android:layout_width="0dp" android:layout_height="8dp" android:layout_marginTop="16dp"
-                        android:max="100" android:progressDrawable="@drawable/bg_progress_bar"
-                        app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toStartOf="@+id/tvPercent"
-                        app:layout_constraintTop_toBottomOf="@+id/tvCollected" />
-                    <TextView android:id="@+id/tvPercent" android:layout_width="wrap_content"
-                        android:layout_height="wrap_content" android:layout_marginStart="12dp"
-                        android:textColor="@color/colorTextSecondary" android:textSize="14sp"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintTop_toTopOf="@+id/progressCollected"
-                        app:layout_constraintBottom_toBottomOf="@+id/progressCollected" />
-                </androidx.constraintlayout.widget.ConstraintLayout>
-            </com.google.android.material.card.MaterialCardView>
-            <com.google.android.material.card.MaterialCardView style="@style/Widget.Made.Card"
-                android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="24dp">
-                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-                    android:orientation="vertical" android:padding="20dp">
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="@string/outstanding" style="@style/TextAppearance.Made.Label" />
-                    <TextView android:id="@+id/tvOutstanding" android:layout_width="wrap_content"
-                        android:layout_height="wrap_content" android:layout_marginTop="8dp"
-                        android:textColor="@color/colorError" style="@style/TextAppearance.Made.MonoLg" />
-                    <TextView android:id="@+id/tvPendingCount" android:layout_width="wrap_content"
-                        android:layout_height="wrap_content" android:layout_marginTop="8dp"
-                        android:background="@drawable/bg_status_pill_overdue"
-                        android:textColor="@color/colorError" android:textSize="11sp" android:textStyle="bold"
-                        android:paddingStart="12dp" android:paddingEnd="12dp"
-                        android:paddingTop="4dp" android:paddingBottom="4dp" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp" android:text="@string/tenant_status"
-                style="@style/TextAppearance.Made.HeadlineMd" />
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilSearchTenant"
+                style="@style/Widget.Made.TextInputLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:hint="@string/search_tenants_hint">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etSearchTenant"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:drawableEnd="@drawable/ic_search"
+                    android:inputType="text"
+                    android:maxLines="1"
+                    android:textColor="@color/colorTextPrimary"
+                    android:textSize="15sp" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <TextView android:id="@+id/tvPendingCount" android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:layout_marginBottom="12dp"
+                android:background="@drawable/bg_status_pill_overdue"
+                android:text="0 TENANTS PENDING"
+                android:textColor="@color/colorError" android:textSize="11sp" android:textStyle="bold"
+                android:paddingStart="12dp" android:paddingEnd="12dp"
+                android:paddingTop="4dp" android:paddingBottom="4dp" />
+            <TextView android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:text="@string/active_leases"
+                style="@style/TextAppearance.Made.Label" />
             <androidx.recyclerview.widget.RecyclerView android:id="@+id/rvTenants"
                 android:layout_width="match_parent" android:layout_height="wrap_content"
                 android:nestedScrollingEnabled="false"
@@ -88,4 +59,17 @@
         app:labelVisibilityMode="selected"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toEndOf="parent" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabAddTenant"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="20dp"
+        android:layout_marginBottom="86dp"
+        android:contentDescription="@string/add_tenant"
+        android:src="@android:drawable/ic_input_add"
+        app:backgroundTint="@color/colorPrimary"
+        app:tint="@color/white"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 </androidx.constraintlayout.widget.ConstraintLayout>

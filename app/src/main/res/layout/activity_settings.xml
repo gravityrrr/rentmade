@@ -66,6 +66,28 @@
                         android:layout_marginTop="8dp"
                         android:text="@string/enable_reminders"
                         android:textColor="@color/colorTextPrimary" />
+
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/switchAutoOverdue"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="@string/auto_overdue"
+                        android:textColor="@color/colorTextPrimary" />
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilGraceDays"
+                        style="@style/Widget.Made.TextInputLayout"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:hint="@string/grace_days">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etGraceDays"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="number" />
+                    </com.google.android.material.textfield.TextInputLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 

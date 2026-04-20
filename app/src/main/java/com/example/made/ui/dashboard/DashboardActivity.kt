@@ -1,6 +1,5 @@
 package com.example.made.ui.dashboard
 
-import android.app.ActivityOptions
 import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
@@ -21,6 +20,7 @@ import com.example.made.ui.tenant.TenantAdapter
 import com.example.made.ui.tenant.TenantDetailsActivity
 import com.example.made.ui.tenant.TenantStatusActivity
 import com.example.made.util.Constants
+import com.example.made.util.NavMotion
 import com.example.made.util.SessionManager
 import com.example.made.util.toCurrency
 import com.example.made.worker.RentReminderWorker
@@ -32,7 +32,9 @@ import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
 import com.github.mikephil.charting.formatter.ValueFormatter
 import com.kizitonwose.calendar.core.DayPosition
 import com.kizitonwose.calendar.core.firstDayOfWeekFromLocale
+import java.time.LocalDate
 import java.time.YearMonth
+import java.time.format.DateTimeParseException
 import java.util.concurrent.TimeUnit
 
 class DashboardActivity : AppCompatActivity() {
@@ -41,6 +43,7 @@ class DashboardActivity : AppCompatActivity() {
     private lateinit var sessionManager: SessionManager
     private val viewModel: DashboardViewModel by viewModels()
     private lateinit var tenantAdapter: TenantAdapter
+    private lateinit var dayBinder: DayCellBinder
     private var chartLabels: List<String> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -68,7 +71,8 @@ class DashboardActivity : AppCompatActivity() {
                 startActivity(intent)
             },
             onMarkPaid = { },
-            onRemind = { }
+            onRemind = { },
+            showActions = false
         )
         binding.rvTenantPreview.apply {
             layoutManager = LinearLayoutManager(this@DashboardActivity)
@@ -155,12 +159,13 @@ class DashboardActivity : AppCompatActivity() {
 
     private fun setupCalendar() {
         val currentMonth = YearMonth.now()
-        binding.calendarView.dayBinder = DayCellBinder(this) { day ->
+        dayBinder = DayCellBinder(this) { day ->
             if (day.position == DayPosition.MonthDate) {
                 RentDueBottomSheetFragment.newInstance(day.date.toString())
                     .show(supportFragmentManager, "RentDueBottomSheet")
             }
         }
+        binding.calendarView.dayBinder = dayBinder
         binding.calendarView.setup(
             currentMonth.minusMonths(6), currentMonth.plusMonths(6), firstDayOfWeekFromLocale()
         )
@@ -172,9 +177,9 @@ class DashboardActivity : AppCompatActivity() {
         binding.bottomNav.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_dashboard -> true
-                R.id.nav_properties -> { startInstant(PropertyPortfolioActivity::class.java); true }
-                R.id.nav_tenants -> { startInstant(TenantStatusActivity::class.java); true }
-                R.id.nav_setup -> { startInstant(SettingsActivity::class.java); true }
+                R.id.nav_properties -> { startSmooth(PropertyPortfolioActivity::class.java); true }
+                R.id.nav_tenants -> { startSmooth(TenantStatusActivity::class.java); true }
+                R.id.nav_setup -> { startSmooth(SettingsActivity::class.java); true }
                 else -> false
             }
         }
@@ -195,6 +200,9 @@ class DashboardActivity : AppCompatActivity() {
             val pending = tenants.count { it.payment_status != "paid" }
             binding.tvPendingCount.text = "$pending TENANTS PENDING"
             binding.tvActiveLeases.text = "Across ${tenants.size} Active Leases"
+            val dueDates = tenants.mapNotNull { parseDueDate(it.due_date) }.toSet()
+            dayBinder.setDueDates(dueDates)
+            binding.calendarView.notifyCalendarChanged()
         }
         viewModel.revenueLabels.observe(this) { labels ->
             updateLineChart(labels, viewModel.revenueValues.value ?: emptyList())
@@ -204,12 +212,29 @@ class DashboardActivity : AppCompatActivity() {
         }
     }
 
-    private fun startInstant(target: Class<*>) {
-        val intent = Intent(this, target)
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-        val options = ActivityOptions.makeCustomAnimation(this, 0, 0).toBundle()
-        startActivity(intent, options)
-        finish()
+    private fun startSmooth(target: Class<*>) {
+        NavMotion.startWithDirection(this, DashboardActivity::class.java, target)
+    }
+
+    private fun parseDueDate(raw: String): LocalDate? {
+        val trimmed = raw.trim()
+        if (trimmed.isEmpty()) return null
+
+        // Supports ISO date, datetime strings, and day-of-month values.
+        val normalized = when {
+            trimmed.length >= 10 && trimmed[4] == '-' && trimmed[7] == '-' -> trimmed.substring(0, 10)
+            trimmed.length >= 10 && trimmed[4] == '/' && trimmed[7] == '/' ->
+                trimmed.substring(0, 10).replace('/', '-')
+            else -> trimmed
+        }
+
+        return try {
+            LocalDate.parse(normalized)
+        } catch (_: DateTimeParseException) {
+            val day = normalized.toIntOrNull() ?: return null
+            val month = YearMonth.now()
+            if (day in 1..month.lengthOfMonth()) month.atDay(day) else null
+        }
     }
 
     private fun scheduleRentReminder() {
@@ -218,5 +243,10 @@ class DashboardActivity : AppCompatActivity() {
         WorkManager.getInstance(this).enqueueUniquePeriodicWork(
             Constants.WORK_TAG_RENT_REMINDER, ExistingPeriodicWorkPolicy.KEEP, workRequest
         )
+    }
+
+    override fun onResume() {
+        super.onResume()
+        viewModel.loadDashboardData(sessionManager.authToken ?: "")
     }
 }

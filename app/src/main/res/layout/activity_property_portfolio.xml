@@ -28,7 +28,7 @@
                             android:text="@string/total_assets" style="@style/TextAppearance.Made.Label" />
                         <TextView android:id="@+id/tvTotalAssets"
                             android:layout_width="wrap_content" android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp" android:text="12"
+                            android:layout_marginTop="4dp" android:text="0"
                             style="@style/TextAppearance.Made.HeadlineLg" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
@@ -41,7 +41,7 @@
                             android:text="@string/avg_occupancy" style="@style/TextAppearance.Made.Label" />
                         <TextView android:id="@+id/tvAvgOccupancy"
                             android:layout_width="wrap_content" android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp" android:text="94%"
+                            android:layout_marginTop="4dp" android:text="0%"
                             android:textColor="@color/colorSecondary"
                             style="@style/TextAppearance.Made.HeadlineLg" />
                     </LinearLayout>

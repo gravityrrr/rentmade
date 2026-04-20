@@ -5,6 +5,9 @@ object Constants {
     const val EXTRA_PROPERTY_ID = "extra_property_id"
     const val EXTRA_TENANT_NAME = "extra_tenant_name"
     const val EXTRA_TENANT_PHONE = "extra_tenant_phone"
+    const val EXTRA_PROPERTY_NAME = "extra_property_name"
+    const val EXTRA_UNIT_ID = "extra_unit_id"
+    const val EXTRA_UNIT_NUMBER = "extra_unit_number"
     const val NOTIFICATION_CHANNEL_ID = "rent_reminders"
     const val NOTIFICATION_CHANNEL_NAME = "Rent Reminders"
     const val NOTIFICATION_ID_BASE = 1000

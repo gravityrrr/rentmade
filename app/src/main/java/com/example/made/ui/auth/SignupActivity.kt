@@ -83,7 +83,10 @@ class SignupActivity : AppCompatActivity() {
                         "email" to email,
                         "password" to password,
                         "data" to mapOf("full_name" to name),
-                        "options" to mapOf("emailRedirectTo" to SupabaseConfig.EMAIL_CONFIRM_REDIRECT)
+                        "options" to mapOf(
+                            "emailRedirectTo" to SupabaseConfig.EMAIL_CONFIRM_REDIRECT,
+                            "email_redirect_to" to SupabaseConfig.EMAIL_CONFIRM_REDIRECT
+                        )
                     )
                 )
                 if (response.isSuccessful) {

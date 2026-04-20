@@ -1,24 +1,37 @@
 package com.example.made.ui.tenant
 
-import android.app.ActivityOptions
+import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import androidx.core.widget.doAfterTextChanged
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.example.made.data.model.BillLedgerEntry
+import com.example.made.data.model.Payment
+import com.example.made.data.model.Tenant
 import com.example.made.R
+import com.example.made.data.repository.TenantRepository
 import com.example.made.databinding.ActivityTenantStatusBinding
 import com.example.made.ui.dashboard.DashboardActivity
 import com.example.made.ui.property.PropertyPortfolioActivity
 import com.example.made.ui.settings.SettingsActivity
 import com.example.made.util.Constants
+import com.example.made.util.NavMotion
 import com.example.made.util.SessionManager
+import com.example.made.util.toast
 import com.example.made.util.toCurrency
+import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.util.UUID
 
 class TenantStatusActivity : AppCompatActivity() {
     private lateinit var binding: ActivityTenantStatusBinding
     private val viewModel: TenantStatusViewModel by viewModels()
     private lateinit var tenantAdapter: TenantAdapter
+    private var allTenants: List<Tenant> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -32,44 +45,148 @@ class TenantStatusActivity : AppCompatActivity() {
                     putExtra(Constants.EXTRA_TENANT_NAME, t.name)
                     putExtra(Constants.EXTRA_TENANT_PHONE, t.phone)
                 })
-            }, onMarkPaid = { }, onRemind = { }
+            },
+            onMarkPaid = null,
+            onEdit = { tenant ->
+                startActivity(Intent(this, TenantDetailsActivity::class.java).apply {
+                    putExtra(Constants.EXTRA_TENANT_ID, tenant.id)
+                    putExtra(Constants.EXTRA_TENANT_NAME, tenant.name)
+                    putExtra(Constants.EXTRA_TENANT_PHONE, tenant.phone)
+                })
+            },
+            onRemind = { tenant -> handleRemindOrCall(tenant) },
+            showMarkPaid = false
         )
         binding.rvTenants.apply {
             layoutManager = LinearLayoutManager(this@TenantStatusActivity)
             adapter = tenantAdapter; isNestedScrollingEnabled = false
         }
+        binding.fabAddTenant.setOnClickListener {
+            startActivity(Intent(this, AddTenantActivity::class.java))
+        }
+        binding.etSearchTenant.doAfterTextChanged { text ->
+            val q = text?.toString()?.trim().orEmpty()
+            val filtered = if (q.isBlank()) allTenants else {
+                allTenants.filter {
+                    it.name.contains(q, ignoreCase = true) ||
+                        it.email.contains(q, ignoreCase = true) ||
+                        it.unit_number.contains(q, ignoreCase = true)
+                }
+            }
+            bindTenantStats(filtered)
+        }
         binding.bottomNav.selectedItemId = R.id.nav_tenants
         binding.bottomNav.setOnItemSelectedListener { item ->
             when (item.itemId) {
-                R.id.nav_dashboard -> { startInstant(DashboardActivity::class.java); true }
-                R.id.nav_properties -> { startInstant(PropertyPortfolioActivity::class.java); true }
+                R.id.nav_dashboard -> { startSmooth(DashboardActivity::class.java); true }
+                R.id.nav_properties -> { startSmooth(PropertyPortfolioActivity::class.java); true }
                 R.id.nav_tenants -> true
-                R.id.nav_setup -> { startInstant(SettingsActivity::class.java); true }
+                R.id.nav_setup -> { startSmooth(SettingsActivity::class.java); true }
                 else -> false
             }
         }
         viewModel.tenants.observe(this) { tenants ->
-            tenantAdapter.submitList(tenants)
-            binding.rvTenants.scheduleLayoutAnimation()
-            val expected = tenants.sumOf { it.monthly_rent }
-            val collected = tenants.filter { it.payment_status == "paid" }.sumOf { it.monthly_rent }
-            val pct = if (expected > 0) ((collected / expected) * 100).toInt() else 0
-            binding.tvTotalExpected.text = expected.toCurrency()
-            binding.tvCollected.text = collected.toCurrency()
-            binding.tvOutstanding.text = (expected - collected).toCurrency()
-            binding.tvPendingCount.text = "${tenants.count { it.payment_status != "paid" }} TENANTS PENDING"
-            binding.tvLeaseCount.text = "Across ${tenants.size} Active Leases"
-            binding.progressCollected.progress = pct
-            binding.tvPercent.text = "$pct%"
+            allTenants = tenants
+            bindTenantStats(tenants)
         }
         viewModel.loadTenants(SessionManager(this).authToken ?: "")
     }
 
-    private fun startInstant(target: Class<*>) {
-        val intent = Intent(this, target)
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-        val options = ActivityOptions.makeCustomAnimation(this, 0, 0).toBundle()
-        startActivity(intent, options)
-        finish()
+    private fun bindTenantStats(tenants: List<Tenant>) {
+        tenantAdapter.submitList(tenants)
+        binding.rvTenants.scheduleLayoutAnimation()
+        binding.tvPendingCount.text = "${tenants.count { it.payment_status != "paid" }} TENANTS PENDING"
+    }
+
+    private fun startSmooth(target: Class<*>) {
+        NavMotion.startWithDirection(this, TenantStatusActivity::class.java, target)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        viewModel.loadTenants(SessionManager(this).authToken ?: "")
+    }
+
+    private fun handleRemindOrCall(tenant: Tenant) {
+        if (tenant.payment_status.equals(Constants.STATUS_OVERDUE, ignoreCase = true) || isPastDue(tenant)) {
+            startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:${tenant.phone}")))
+            return
+        }
+
+        val total = tenant.monthly_rent + tenant.water_bill + tenant.electricity_bill + tenant.trash_bill
+        val message = "Hi ${tenant.name}, gentle reminder for upcoming dues. " +
+            "Rent: ${tenant.monthly_rent.toCurrency()}, Water: ${tenant.water_bill.toCurrency()}, " +
+            "Electricity: ${tenant.electricity_bill.toCurrency()}, Trash: ${tenant.trash_bill.toCurrency()}. " +
+            "Total: ${total.toCurrency()}. Please pay by ${tenant.due_date}."
+        val url = "https://wa.me/${tenant.phone.replace("+", "")}?text=${Uri.encode(message)}"
+        try {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+        } catch (_: ActivityNotFoundException) {
+            toast("WhatsApp not found")
+        }
+    }
+
+    private fun markAsPaid(tenant: Tenant) {
+        val token = SessionManager(this).authToken.orEmpty()
+        if (token.isBlank()) return
+        lifecycleScope.launch {
+            val repo = TenantRepository()
+            val now = LocalDate.now().toString()
+            val update = repo.updateTenant(
+                token,
+                tenant.id,
+                mapOf("payment_status" to Constants.STATUS_PAID, "last_payment_date" to now)
+            )
+            if (update.isSuccess) {
+                repo.addPayment(
+                    token,
+                    Payment(
+                        id = UUID.randomUUID().toString(),
+                        tenant_id = tenant.id,
+                        property_id = tenant.property_id,
+                        unit_id = tenant.unit_id,
+                        amount = tenant.monthly_rent + tenant.water_bill + tenant.electricity_bill + tenant.trash_bill,
+                        rent_amount = tenant.monthly_rent,
+                        water_amount = tenant.water_bill,
+                        electricity_amount = tenant.electricity_bill,
+                        trash_amount = tenant.trash_bill,
+                        payment_date = now,
+                        month_label = LocalDate.now().month.name.take(3),
+                        status = Constants.STATUS_PAID
+                    )
+                )
+                repo.addBillLedgerEntry(
+                    token,
+                    BillLedgerEntry(
+                        id = UUID.randomUUID().toString(),
+                        tenant_id = tenant.id,
+                        property_id = tenant.property_id,
+                        unit_id = tenant.unit_id,
+                        period_month = LocalDate.now().withDayOfMonth(1).toString(),
+                        due_date = tenant.due_date,
+                        rent_amount = tenant.monthly_rent,
+                        water_amount = tenant.water_bill,
+                        electricity_amount = tenant.electricity_bill,
+                        trash_amount = tenant.trash_bill,
+                        total_amount = tenant.monthly_rent + tenant.water_bill + tenant.electricity_bill + tenant.trash_bill,
+                        status = Constants.STATUS_PAID,
+                        paid_on = now
+                    )
+                )
+                toast("Marked paid")
+                viewModel.loadTenants(token)
+            } else {
+                toast("Unable to mark paid")
+            }
+        }
+    }
+
+    private fun isPastDue(tenant: Tenant): Boolean {
+        if (tenant.payment_status.equals(Constants.STATUS_PAID, ignoreCase = true)) return false
+        val dueDate = runCatching { LocalDate.parse(tenant.due_date) }.getOrNull()
+        if (dueDate != null) return dueDate.isBefore(LocalDate.now())
+        val day = tenant.due_date.toIntOrNull() ?: return false
+        val thisMonth = LocalDate.now().withDayOfMonth(day.coerceIn(1, LocalDate.now().lengthOfMonth()))
+        return thisMonth.isBefore(LocalDate.now())
     }
 }

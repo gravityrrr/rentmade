@@ -43,19 +43,26 @@ class AddPropertyActivity : AppCompatActivity() {
         val revenue = binding.etMonthlyRevenue.text.toString().toDoubleOrNull() ?: 0.0
         val sm = SessionManager(this)
 
+        val token = sm.authToken.orEmpty()
+        val landlordId = sm.userId.orEmpty()
+        if (token.isBlank() || landlordId.isBlank()) {
+            toast("Session expired. Please sign in again")
+            return
+        }
+
         val property = Property(
-            id = UUID.randomUUID().toString(), landlord_id = sm.userId ?: "",
+            id = UUID.randomUUID().toString(), landlord_id = landlordId,
             name = name, address = address, total_units = units, monthly_target_revenue = revenue
         )
         lifecycleScope.launch {
-            try {
-                PropertyRepository().addProperty(sm.authToken ?: "", property)
+            PropertyRepository().addProperty(token, property)
+                .onSuccess {
                 toast("Property saved!")
                 finish()
-            } catch (e: Exception) {
-                toast("Saved (offline mode)")
-                finish()
-            }
+                }
+                .onFailure {
+                    toast("Unable to save property")
+                }
         }
     }
 }

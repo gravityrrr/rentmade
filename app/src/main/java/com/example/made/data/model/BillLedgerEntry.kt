@@ -1,17 +1,18 @@
 package com.example.made.data.model
 
-data class Payment(
+data class BillLedgerEntry(
     val id: String = "",
     val tenant_id: String = "",
-    val property_id: String? = null,
+    val property_id: String = "",
     val unit_id: String? = null,
-    val amount: Double = 0.0,
+    val period_month: String = "",
+    val due_date: String = "",
     val rent_amount: Double = 0.0,
     val water_amount: Double = 0.0,
     val electricity_amount: Double = 0.0,
     val trash_amount: Double = 0.0,
-    val payment_date: String = "",
-    val month_label: String = "",
-    val status: String = "paid",
-    val notes: String? = null
+    val total_amount: Double = 0.0,
+    val status: String = "pending",
+    val paid_on: String? = null,
+    val created_at: String? = null
 )

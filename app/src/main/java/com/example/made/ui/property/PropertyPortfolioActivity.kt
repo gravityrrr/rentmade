@@ -1,6 +1,5 @@
 package com.example.made.ui.property
 
-import android.app.ActivityOptions
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.viewModels
@@ -11,6 +10,8 @@ import com.example.made.databinding.ActivityPropertyPortfolioBinding
 import com.example.made.ui.dashboard.DashboardActivity
 import com.example.made.ui.settings.SettingsActivity
 import com.example.made.ui.tenant.TenantStatusActivity
+import com.example.made.util.Constants
+import com.example.made.util.NavMotion
 import com.example.made.util.SessionManager
 
 class PropertyPortfolioActivity : AppCompatActivity() {
@@ -23,7 +24,12 @@ class PropertyPortfolioActivity : AppCompatActivity() {
         binding = ActivityPropertyPortfolioBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        propertyAdapter = PropertyAdapter { /* navigate to detail */ }
+        propertyAdapter = PropertyAdapter { property ->
+            startActivity(Intent(this, PropertyUnitsActivity::class.java).apply {
+                putExtra(Constants.EXTRA_PROPERTY_ID, property.id)
+                putExtra(Constants.EXTRA_PROPERTY_NAME, property.name)
+            })
+        }
         binding.rvProperties.apply {
             layoutManager = LinearLayoutManager(this@PropertyPortfolioActivity)
             adapter = propertyAdapter
@@ -35,10 +41,10 @@ class PropertyPortfolioActivity : AppCompatActivity() {
         binding.bottomNav.selectedItemId = R.id.nav_properties
         binding.bottomNav.setOnItemSelectedListener { item ->
             when (item.itemId) {
-                R.id.nav_dashboard -> { startInstant(DashboardActivity::class.java); true }
+                R.id.nav_dashboard -> { startSmooth(DashboardActivity::class.java); true }
                 R.id.nav_properties -> true
-                R.id.nav_tenants -> { startInstant(TenantStatusActivity::class.java); true }
-                R.id.nav_setup -> { startInstant(SettingsActivity::class.java); true }
+                R.id.nav_tenants -> { startSmooth(TenantStatusActivity::class.java); true }
+                R.id.nav_setup -> { startSmooth(SettingsActivity::class.java); true }
                 else -> false
             }
         }
@@ -52,11 +58,12 @@ class PropertyPortfolioActivity : AppCompatActivity() {
         viewModel.loadProperties(SessionManager(this).authToken ?: "")
     }
 
-    private fun startInstant(target: Class<*>) {
-        val intent = Intent(this, target)
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-        val options = ActivityOptions.makeCustomAnimation(this, 0, 0).toBundle()
-        startActivity(intent, options)
-        finish()
+    private fun startSmooth(target: Class<*>) {
+        NavMotion.startWithDirection(this, PropertyPortfolioActivity::class.java, target)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        viewModel.loadProperties(SessionManager(this).authToken ?: "")
     }
 }
