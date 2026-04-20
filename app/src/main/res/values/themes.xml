@@ -15,6 +15,7 @@
         <item name="android:textColorSecondary">@color/colorTextSecondary</item>
     </style>
 
+
     <style name="Theme.Made.Splash" parent="Theme.Made">
         <item name="android:windowBackground">@color/colorBackground</item>
     </style>

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    style="@style/Widget.Made.Card"
+    android:layout_width="match_parent" android:layout_height="wrap_content"
+    android:layout_marginBottom="8dp">
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="16dp">
+        <ImageView android:id="@+id/ivPaymentIcon"
+            android:layout_width="40dp" android:layout_height="40dp"
+            android:src="@drawable/ic_document" android:padding="8dp"
+            android:background="@drawable/bg_status_pill_verified"
+            android:contentDescription="Payment"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent" />
+        <TextView android:id="@+id/tvPaymentMonth"
+            android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            style="@style/TextAppearance.Made.BodyLg" android:textStyle="bold"
+            android:textColor="@color/colorTextPrimary"
+            app:layout_constraintStart_toEndOf="@+id/ivPaymentIcon"
+            app:layout_constraintEnd_toStartOf="@+id/tvPaymentAmount"
+            app:layout_constraintTop_toTopOf="@+id/ivPaymentIcon" />
+        <TextView android:id="@+id/tvPaymentDate"
+            android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_marginStart="12dp" style="@style/TextAppearance.Made.BodySm"
+            app:layout_constraintStart_toEndOf="@+id/ivPaymentIcon"
+            app:layout_constraintEnd_toStartOf="@+id/tvPaymentAmount"
+            app:layout_constraintTop_toBottomOf="@+id/tvPaymentMonth" />
+        <TextView android:id="@+id/tvPaymentAmount"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:textColor="@color/colorPrimary" android:textSize="16sp" android:textStyle="bold"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+        <TextView android:id="@+id/tvPaymentStatus"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textSize="10sp" android:textStyle="bold"
+            android:paddingStart="8dp" android:paddingEnd="8dp"
+            android:paddingTop="2dp" android:paddingBottom="2dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tvPaymentAmount" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</com.google.android.material.card.MaterialCardView>

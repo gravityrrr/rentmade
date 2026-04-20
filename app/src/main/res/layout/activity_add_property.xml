@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@color/colorBackground" android:fillViewport="true">
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="20dp">
+        <include android:id="@+id/headerLayout" layout="@layout/layout_header"
+            app:layout_constraintTop_toTopOf="parent" app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+        <TextView android:id="@+id/tvNewProperty"
+            android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginTop="24dp"
+            android:text="@string/new_property" style="@style/TextAppearance.Made.HeadlineXL"
+            app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/headerLayout" />
+        <TextView android:id="@+id/tvSub"
+            android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginTop="4dp"
+            android:text="@string/add_property_subtitle" style="@style/TextAppearance.Made.BodyMd"
+            app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tvNewProperty" />
+        <com.google.android.material.card.MaterialCardView android:id="@+id/cardImageUpload"
+            style="@style/Widget.Made.Card" android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tvSub">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="vertical" android:gravity="center" android:padding="32dp">
+                <ImageView android:layout_width="48dp" android:layout_height="48dp"
+                    android:src="@drawable/ic_camera_upload" android:contentDescription="Upload" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp" android:text="@string/upload_hero_image"
+                    style="@style/TextAppearance.Made.BodyMd" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+        <TextView android:id="@+id/tvCore" android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_marginTop="24dp" android:text="@string/core_details"
+            style="@style/TextAppearance.Made.HeadlineMd"
+            app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/cardImageUpload" />
+        <TextView android:id="@+id/lbl1" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_marginTop="16dp" android:text="@string/label_property_name"
+            style="@style/TextAppearance.Made.Label"
+            app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toBottomOf="@+id/tvCore" />
+        <com.google.android.material.textfield.TextInputLayout android:id="@+id/tilPropertyName"
+            style="@style/Widget.Made.TextInputLayout" android:layout_width="0dp"
+            android:layout_height="wrap_content" android:layout_marginTop="8dp"
+            android:hint="@string/hint_property_name"
+            app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/lbl1">
+            <com.google.android.material.textfield.TextInputEditText android:id="@+id/etPropertyName"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:textColor="@color/colorTextPrimary" android:textSize="16sp" />
+        </com.google.android.material.textfield.TextInputLayout>
+        <TextView android:id="@+id/lbl2" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_marginTop="16dp" android:text="@string/label_full_address"
+            style="@style/TextAppearance.Made.Label"
+            app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toBottomOf="@+id/tilPropertyName" />
+        <com.google.android.material.textfield.TextInputLayout android:id="@+id/tilAddress"
+            style="@style/Widget.Made.TextInputLayout" android:layout_width="0dp"
+            android:layout_height="wrap_content" android:layout_marginTop="8dp"
+            android:hint="@string/hint_address"
+            app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/lbl2">
+            <com.google.android.material.textfield.TextInputEditText android:id="@+id/etAddress"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:textColor="@color/colorTextPrimary" android:textSize="16sp" />
+        </com.google.android.material.textfield.TextInputLayout>
+        <TextView android:id="@+id/lbl3" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_marginTop="16dp" android:text="@string/label_total_units"
+            style="@style/TextAppearance.Made.Label"
+            app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toBottomOf="@+id/tilAddress" />
+        <com.google.android.material.textfield.TextInputLayout android:id="@+id/tilTotalUnits"
+            style="@style/Widget.Made.TextInputLayout" android:layout_width="0dp"
+            android:layout_height="wrap_content" android:layout_marginTop="8dp" android:hint="@string/hint_total_units"
+            app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/lbl3">
+            <com.google.android.material.textfield.TextInputEditText android:id="@+id/etTotalUnits"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:inputType="number" android:textColor="@color/colorTextPrimary" android:textSize="16sp" />
+        </com.google.android.material.textfield.TextInputLayout>
+        <TextView android:id="@+id/lbl4" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_marginTop="16dp" android:text="@string/label_monthly_revenue"
+            style="@style/TextAppearance.Made.Label"
+            app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toBottomOf="@+id/tilTotalUnits" />
+        <com.google.android.material.textfield.TextInputLayout android:id="@+id/tilMonthlyRevenue"
+            style="@style/Widget.Made.TextInputLayout" android:layout_width="0dp"
+            android:layout_height="wrap_content" android:layout_marginTop="8dp" android:hint="@string/hint_monthly_revenue"
+            app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/lbl4">
+            <com.google.android.material.textfield.TextInputEditText android:id="@+id/etMonthlyRevenue"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:inputType="numberDecimal" android:textColor="@color/colorTextPrimary" android:textSize="16sp" />
+        </com.google.android.material.textfield.TextInputLayout>
+        <com.google.android.material.button.MaterialButton android:id="@+id/btnCancel"
+            style="@style/Widget.Made.Button.Text" android:layout_width="wrap_content"
+            android:layout_height="wrap_content" android:layout_marginTop="32dp"
+            android:text="@string/btn_cancel" android:layout_marginBottom="24dp"
+            app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toStartOf="@+id/btnSaveProperty"
+            app:layout_constraintTop_toBottomOf="@+id/tilMonthlyRevenue"
+            app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintHorizontal_chainStyle="packed" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/btnSaveProperty"
+            style="@style/Widget.Made.Button.Primary" android:layout_width="wrap_content"
+            android:layout_height="wrap_content" android:layout_marginStart="16dp"
+            android:text="@string/btn_save_property"
+            app:layout_constraintStart_toEndOf="@+id/btnCancel" app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/btnCancel" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</ScrollView>
