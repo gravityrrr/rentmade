@@ -1,19 +1,27 @@
 package com.example.made.ui.tenant
 
 import android.app.DatePickerDialog
+import android.net.Uri
 import android.os.Bundle
 import android.widget.ArrayAdapter
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.widget.doAfterTextChanged
 import androidx.appcompat.app.AppCompatActivity
+import com.bumptech.glide.Glide
 import androidx.lifecycle.lifecycleScope
 import com.example.made.R
 import com.example.made.data.model.Property
 import com.example.made.data.model.Tenant
+import com.example.made.data.repository.DocumentVaultRepository
 import com.example.made.data.repository.PropertyRepository
 import com.example.made.data.repository.TenantRepository
 import com.example.made.databinding.ActivityAddTenantBinding
 import com.example.made.util.Constants
 import com.example.made.util.SessionManager
+import com.example.made.util.handleAuthExpired
+import com.example.made.util.parseFlexibleDate
+import com.example.made.util.toStorageIsoDateOrSelf
+import com.example.made.util.toAmountOrZero
 import com.example.made.util.toast
 import com.google.android.material.transition.platform.MaterialFadeThrough
 import kotlinx.coroutines.launch
@@ -28,6 +36,18 @@ class AddTenantActivity : AppCompatActivity() {
     private val properties = mutableListOf<Property>()
     private var selectedPropertyId: String = ""
     private var selectedUnitId: String? = null
+    private var selectedTenantImageUri: Uri? = null
+    private val documentRepository = DocumentVaultRepository()
+
+    private val pickTenantImage = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        if (uri == null) return@registerForActivityResult
+        selectedTenantImageUri = uri
+        Glide.with(this)
+            .load(uri)
+            .centerCrop()
+            .into(binding.ivTenantPreview)
+        binding.tvTenantImageHint.text = "Image selected"
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,6 +65,7 @@ class AddTenantActivity : AppCompatActivity() {
         loadProperties()
 
         binding.btnCancel.setOnClickListener { finish() }
+        binding.cardTenantImageUpload.setOnClickListener { pickTenantImage.launch("image/*") }
         binding.btnSaveTenant.setOnClickListener { saveTenant() }
     }
 
@@ -59,8 +80,9 @@ class AddTenantActivity : AppCompatActivity() {
         val phone = binding.etTenantPhone.text?.toString()?.trim().orEmpty()
         val unit = binding.etTenantUnit.text?.toString()?.trim().orEmpty()
         val propertyId = selectedPropertyId
-        val rent = binding.etRent.text?.toString()?.toDoubleOrNull() ?: 0.0
-        val dueDate = binding.etDueDate.text?.toString()?.trim().orEmpty()
+        val rent = binding.etRent.text?.toString().toAmountOrZero()
+        val dueDateDisplay = binding.etDueDate.text?.toString()?.trim().orEmpty()
+        val dueDate = dueDateDisplay.toStorageIsoDateOrSelf()
 
         binding.tilTenantName.error = null
         binding.tilProperty.error = null
@@ -79,32 +101,67 @@ class AddTenantActivity : AppCompatActivity() {
             binding.tilRent.error = "Enter valid rent"
             return
         }
-        if (!isValidDueDate(dueDate)) {
-            binding.tilDueDate.error = "Use YYYY-MM-DD format"
+        if (!isValidDueDate(dueDateDisplay)) {
+            binding.tilDueDate.error = "Use DD-MM-YYYY format"
             return
         }
 
         val session = SessionManager(this)
-        val tenant = Tenant(
-            id = UUID.randomUUID().toString(),
-            property_id = propertyId,
-            unit_id = selectedUnitId,
-            name = name,
-            email = email,
-            phone = phone,
-            unit_number = unit,
-            monthly_rent = rent,
-            due_date = dueDate.ifBlank { "1" },
-            payment_status = "pending"
-        )
+        val token = session.authToken.orEmpty()
+        val userId = session.userId.orEmpty()
+        if (token.isBlank() || userId.isBlank()) {
+            toast("Session expired. Please sign in again")
+            return
+        }
 
         lifecycleScope.launch {
-            val result = TenantRepository().addTenant(session.authToken ?: "", tenant)
+            val tenantId = UUID.randomUUID().toString()
+            var avatarUrl: String? = null
+
+            if (selectedTenantImageUri != null) {
+                val uploadResult = documentRepository.uploadUserImage(
+                    context = this@AddTenantActivity,
+                    token = token,
+                    userId = userId,
+                    entityId = tenantId,
+                    prefix = "avatar",
+                    imageUri = selectedTenantImageUri!!,
+                    bucket = DocumentVaultRepository.TENANT_IMAGES_BUCKET
+                )
+                if (uploadResult.isFailure) {
+                    val message = uploadResult.exceptionOrNull()?.message
+                    if (!handleAuthExpired(message)) {
+                        toast(message ?: "Unable to upload tenant image")
+                    }
+                    return@launch
+                }
+                val path = uploadResult.getOrNull().orEmpty()
+                avatarUrl = documentRepository.buildPublicObjectUrl(DocumentVaultRepository.TENANT_IMAGES_BUCKET, path)
+            }
+
+            val tenant = Tenant(
+                id = tenantId,
+                property_id = propertyId,
+                unit_id = selectedUnitId,
+                name = name,
+                email = email,
+                phone = phone,
+                unit_number = unit,
+                monthly_rent = rent,
+                due_date = dueDate.ifBlank { "1" },
+                payment_status = "pending",
+                avatar_url = avatarUrl
+            )
+
+            val result = TenantRepository().addTenant(token, tenant)
             if (result.isSuccess) {
                 toast("Tenant added")
                 finish()
             } else {
-                toast("Failed to add tenant")
+                val message = result.exceptionOrNull()?.message
+                if (!handleAuthExpired(message)) {
+                    toast(message ?: "Failed to add tenant")
+                }
             }
         }
     }
@@ -125,6 +182,10 @@ class AddTenantActivity : AppCompatActivity() {
                 if (prefillProperty != null) {
                     selectedPropertyId = prefillProperty.id
                     binding.actProperty.setText(prefillProperty.name, false)
+                }
+            }.onFailure { err ->
+                if (!handleAuthExpired(err.message)) {
+                    toast("Unable to load properties")
                 }
             }
             binding.actProperty.setOnItemClickListener { _, _, position, _ ->
@@ -153,17 +214,12 @@ class AddTenantActivity : AppCompatActivity() {
         val now = LocalDate.now()
         DatePickerDialog(this, { _, year, month, dayOfMonth ->
             val selected = LocalDate.of(year, month + 1, dayOfMonth)
-            binding.etDueDate.setText(selected.format(DateTimeFormatter.ISO_LOCAL_DATE))
+            binding.etDueDate.setText(selected.format(DateTimeFormatter.ofPattern("dd-MM-yyyy")))
             binding.tilDueDate.error = null
         }, now.year, now.monthValue - 1, now.dayOfMonth).show()
     }
 
     private fun isValidDueDate(value: String): Boolean {
-        return try {
-            LocalDate.parse(value, DateTimeFormatter.ISO_LOCAL_DATE)
-            true
-        } catch (_: DateTimeParseException) {
-            false
-        }
+        return parseFlexibleDate(value) != null
     }
 }

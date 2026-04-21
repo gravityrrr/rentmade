@@ -75,6 +75,14 @@
                         android:text="@string/auto_overdue"
                         android:textColor="@color/colorTextPrimary" />
 
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/switchCollectionInAdvance"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="@string/collection_before_month"
+                        android:textColor="@color/colorTextPrimary" />
+
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/tilGraceDays"
                         style="@style/Widget.Made.TextInputLayout"

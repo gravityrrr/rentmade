@@ -24,7 +24,16 @@ interface SupabaseApi {
         @Header("Authorization") token: String,
         @Header("Content-Type") contentType: String = "application/json",
         @Header("Prefer") prefer: String = "return=representation",
-        @Body payload: Map<String, Any?>
+        @Body payload: Map<String, @JvmSuppressWildcards Any?>
+    ): Response<List<Property>>
+
+    @PATCH("rest/v1/properties")
+    suspend fun updateProperty(
+        @Header("Authorization") token: String,
+        @Header("Content-Type") contentType: String = "application/json",
+        @Header("Prefer") prefer: String = "return=representation",
+        @Query("id") id: String,
+        @Body payload: Map<String, @JvmSuppressWildcards Any?>
     ): Response<List<Property>>
 
     // ── Tenants ──
@@ -61,7 +70,7 @@ interface SupabaseApi {
         @Header("Authorization") token: String,
         @Header("Content-Type") contentType: String = "application/json",
         @Header("Prefer") prefer: String = "return=representation",
-        @Body tenant: Tenant
+        @Body payload: Map<String, @JvmSuppressWildcards Any?>
     ): Response<List<Tenant>>
 
     @PATCH("rest/v1/tenants")
@@ -70,7 +79,7 @@ interface SupabaseApi {
         @Header("Content-Type") contentType: String = "application/json",
         @Header("Prefer") prefer: String = "return=representation",
         @Query("id") id: String,
-        @Body payload: Map<String, Any?>
+        @Body payload: Map<String, @JvmSuppressWildcards Any?>
     ): Response<List<Tenant>>
 
     // ── Payments ──
@@ -106,6 +115,13 @@ interface SupabaseApi {
         @Query("order") order: String = "period_month.desc"
     ): List<BillLedgerEntry>
 
+    @GET("rest/v1/tenant_bill_ledger")
+    suspend fun getBillLedger(
+        @Header("Authorization") token: String,
+        @Query("select") select: String = "*",
+        @Query("order") order: String = "period_month.asc"
+    ): List<BillLedgerEntry>
+
     @POST("rest/v1/tenant_bill_ledger")
     suspend fun addBillLedgerEntry(
         @Header("Authorization") token: String,
@@ -120,7 +136,7 @@ interface SupabaseApi {
         @Header("Content-Type") contentType: String = "application/json",
         @Header("Prefer") prefer: String = "return=representation",
         @Query("id") id: String,
-        @Body payload: Map<String, Any?>
+        @Body payload: Map<String, @JvmSuppressWildcards Any?>
     ): Response<List<BillLedgerEntry>>
 
     // ── Units ──
@@ -146,7 +162,7 @@ interface SupabaseApi {
         @Header("Content-Type") contentType: String = "application/json",
         @Header("Prefer") prefer: String = "return=representation",
         @Query("id") id: String,
-        @Body payload: Map<String, Any?>
+        @Body payload: Map<String, @JvmSuppressWildcards Any?>
     ): Response<List<RentalUnit>>
 
     // ── Landlord Settings ──
@@ -187,7 +203,7 @@ interface SupabaseApi {
         @Header("Content-Type") contentType: String = "application/json",
         @Header("Prefer") prefer: String = "return=representation",
         @Query("id") id: String,
-        @Body payload: Map<String, Any>
+        @Body payload: Map<String, @JvmSuppressWildcards Any>
     ): Response<List<UserProfile>>
 
     // ── Auth ──

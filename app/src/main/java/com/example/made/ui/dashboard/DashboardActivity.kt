@@ -19,8 +19,10 @@ import com.example.made.ui.settings.SettingsActivity
 import com.example.made.ui.tenant.TenantAdapter
 import com.example.made.ui.tenant.TenantDetailsActivity
 import com.example.made.ui.tenant.TenantStatusActivity
+import com.example.made.util.attachTabSwipeNavigation
 import com.example.made.util.Constants
-import com.example.made.util.NavMotion
+import com.example.made.util.navigateTabInstant
+import com.example.made.util.parseFlexibleDate
 import com.example.made.util.SessionManager
 import com.example.made.util.toCurrency
 import com.example.made.worker.RentReminderWorker
@@ -34,7 +36,10 @@ import com.kizitonwose.calendar.core.DayPosition
 import com.kizitonwose.calendar.core.firstDayOfWeekFromLocale
 import java.time.LocalDate
 import java.time.YearMonth
+import java.time.temporal.ChronoUnit
+import java.time.format.TextStyle
 import java.time.format.DateTimeParseException
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 class DashboardActivity : AppCompatActivity() {
@@ -56,6 +61,7 @@ class DashboardActivity : AppCompatActivity() {
         setupLineChart()
         setupCalendar()
         setupBottomNav()
+        setupSwipeNavigation()
         observeViewModel()
         scheduleRentReminder()
         viewModel.loadDashboardData(sessionManager.authToken ?: "")
@@ -69,6 +75,7 @@ class DashboardActivity : AppCompatActivity() {
                 intent.putExtra(Constants.EXTRA_TENANT_NAME, tenant.name)
                 intent.putExtra(Constants.EXTRA_TENANT_PHONE, tenant.phone)
                 startActivity(intent)
+                overridePendingTransition(0, 0)
             },
             onMarkPaid = { },
             onRemind = { },
@@ -125,7 +132,7 @@ class DashboardActivity : AppCompatActivity() {
                 textColor = textMuted
                 axisLineColor = Color.TRANSPARENT
                 valueFormatter = object : ValueFormatter() {
-                    override fun getFormattedValue(value: Float) = "$${(value/1000).toInt()}K"
+                    override fun getFormattedValue(value: Float) = "₹${(value/1000).toInt()}K"
                 }
             }
             axisRight.isEnabled = false
@@ -169,7 +176,17 @@ class DashboardActivity : AppCompatActivity() {
         binding.calendarView.setup(
             currentMonth.minusMonths(6), currentMonth.plusMonths(6), firstDayOfWeekFromLocale()
         )
+        binding.calendarView.monthScrollListener = { month ->
+            val monthLabel = month.yearMonth.month.getDisplayName(TextStyle.FULL, Locale.getDefault())
+            binding.tvCalendarMonthYear.text = getString(
+                R.string.calendar_month_year,
+                monthLabel,
+                month.yearMonth.year
+            )
+        }
         binding.calendarView.scrollToMonth(currentMonth)
+        val currentLabel = currentMonth.month.getDisplayName(TextStyle.FULL, Locale.getDefault())
+        binding.tvCalendarMonthYear.text = getString(R.string.calendar_month_year, currentLabel, currentMonth.year)
     }
 
     private fun setupBottomNav() {
@@ -177,29 +194,43 @@ class DashboardActivity : AppCompatActivity() {
         binding.bottomNav.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_dashboard -> true
-                R.id.nav_properties -> { startSmooth(PropertyPortfolioActivity::class.java); true }
-                R.id.nav_tenants -> { startSmooth(TenantStatusActivity::class.java); true }
-                R.id.nav_setup -> { startSmooth(SettingsActivity::class.java); true }
+                R.id.nav_properties -> { navigateTabInstant(PropertyPortfolioActivity::class.java); true }
+                R.id.nav_tenants -> { navigateTabInstant(TenantStatusActivity::class.java); true }
+                R.id.nav_setup -> { navigateTabInstant(SettingsActivity::class.java); true }
                 else -> false
             }
         }
+    }
+
+    private fun setupSwipeNavigation() {
+        attachTabSwipeNavigation(
+            activity = this,
+            touchSurface = binding.root,
+            onSwipeLeft = { navigateTabInstant(PropertyPortfolioActivity::class.java) },
+            onSwipeRight = null
+        )
     }
 
     private fun observeViewModel() {
         viewModel.totalExpected.observe(this) { binding.tvTotalExpected.text = it.toCurrency() }
         viewModel.totalCollected.observe(this) { collected ->
             binding.tvCollected.text = collected.toCurrency()
-            val total = viewModel.totalExpected.value ?: 1.0
-            val pct = ((collected / total) * 100).toInt()
+            val total = viewModel.totalExpected.value ?: 0.0
+            val pct = if (total > 0.0) ((collected / total) * 100).toInt().coerceIn(0, 100) else 0
             binding.progressCollected.progress = pct
             binding.tvCollectedPercent.text = "$pct%"
         }
         viewModel.totalOutstanding.observe(this) { binding.tvOutstanding.text = it.toCurrency() }
         viewModel.tenants.observe(this) { tenants ->
             tenantAdapter.submitList(tenants)
-            val pending = tenants.count { it.payment_status != "paid" }
-            binding.tvPendingCount.text = "$pending TENANTS PENDING"
-            binding.tvActiveLeases.text = "Across ${tenants.size} Active Leases"
+            val pending = tenants.count { isDueSoonPending(it) }
+            binding.tvPendingCount.text = getString(
+                R.string.pending_for_month,
+                pending,
+                resolvePendingMonthLabel()
+            )
+            val activeLeaseCount = tenants.count { hasAssignedUnit(it) }
+            binding.tvActiveLeases.text = "Across $activeLeaseCount Active Leases"
             val dueDates = tenants.mapNotNull { parseDueDate(it.due_date) }.toSet()
             dayBinder.setDueDates(dueDates)
             binding.calendarView.notifyCalendarChanged()
@@ -212,29 +243,8 @@ class DashboardActivity : AppCompatActivity() {
         }
     }
 
-    private fun startSmooth(target: Class<*>) {
-        NavMotion.startWithDirection(this, DashboardActivity::class.java, target)
-    }
-
     private fun parseDueDate(raw: String): LocalDate? {
-        val trimmed = raw.trim()
-        if (trimmed.isEmpty()) return null
-
-        // Supports ISO date, datetime strings, and day-of-month values.
-        val normalized = when {
-            trimmed.length >= 10 && trimmed[4] == '-' && trimmed[7] == '-' -> trimmed.substring(0, 10)
-            trimmed.length >= 10 && trimmed[4] == '/' && trimmed[7] == '/' ->
-                trimmed.substring(0, 10).replace('/', '-')
-            else -> trimmed
-        }
-
-        return try {
-            LocalDate.parse(normalized)
-        } catch (_: DateTimeParseException) {
-            val day = normalized.toIntOrNull() ?: return null
-            val month = YearMonth.now()
-            if (day in 1..month.lengthOfMonth()) month.atDay(day) else null
-        }
+        return parseFlexibleDate(raw)
     }
 
     private fun scheduleRentReminder() {
@@ -248,5 +258,23 @@ class DashboardActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         viewModel.loadDashboardData(sessionManager.authToken ?: "")
+    }
+
+    private fun hasAssignedUnit(tenant: com.example.made.data.model.Tenant): Boolean {
+        return !tenant.unit_id.isNullOrBlank()
+    }
+
+    private fun isDueSoonPending(tenant: com.example.made.data.model.Tenant): Boolean {
+        if (tenant.payment_status.equals(Constants.STATUS_PAID, ignoreCase = true)) return false
+        val dueDate = parseDueDate(tenant.due_date) ?: return false
+        val daysUntilDue = ChronoUnit.DAYS.between(LocalDate.now(), dueDate)
+        return daysUntilDue in 0..3
+    }
+
+    private fun resolvePendingMonthLabel(): String {
+        val isAdvance = sessionManager.collectionCycle == SessionManager.COLLECTION_CYCLE_ADVANCE
+        val period = if (isAdvance) YearMonth.now().plusMonths(1) else YearMonth.now()
+        val monthName = period.month.getDisplayName(TextStyle.SHORT, Locale.getDefault())
+        return "$monthName ${period.year}"
     }
 }

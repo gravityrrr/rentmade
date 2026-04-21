@@ -17,6 +17,10 @@ class SessionManager(context: Context) {
         private const val KEY_RENT_REMINDERS = "rent_reminders"
         private const val KEY_GRACE_DAYS = "grace_days"
         private const val KEY_AUTO_OVERDUE = "auto_overdue"
+        private const val KEY_COLLECTION_CYCLE = "collection_cycle"
+
+        const val COLLECTION_CYCLE_ADVANCE = "advance"
+        const val COLLECTION_CYCLE_ARREARS = "arrears"
     }
 
     private val prefs: SharedPreferences =
@@ -57,6 +61,13 @@ class SessionManager(context: Context) {
     var autoOverdueEnabled: Boolean
         get() = prefs.getBoolean(KEY_AUTO_OVERDUE, true)
         set(value) = prefs.edit().putBoolean(KEY_AUTO_OVERDUE, value).apply()
+
+    var collectionCycle: String
+        get() = prefs.getString(KEY_COLLECTION_CYCLE, COLLECTION_CYCLE_ADVANCE) ?: COLLECTION_CYCLE_ADVANCE
+        set(value) {
+            val normalized = if (value == COLLECTION_CYCLE_ARREARS) COLLECTION_CYCLE_ARREARS else COLLECTION_CYCLE_ADVANCE
+            prefs.edit().putString(KEY_COLLECTION_CYCLE, normalized).apply()
+        }
 
     val isAdminUser: Boolean
         get() = userEmail.equals(SupabaseConfig.ADMIN_EMAIL, ignoreCase = true)

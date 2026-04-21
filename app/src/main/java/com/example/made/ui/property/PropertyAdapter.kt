@@ -11,7 +11,8 @@ import com.example.made.data.model.Property
 import com.example.made.databinding.ItemPropertyCardBinding
 
 class PropertyAdapter(
-    private val onPropertyClick: (Property) -> Unit
+    private val onPropertyClick: (Property) -> Unit,
+    private val onPropertyLongClick: (Property) -> Unit
 ) : ListAdapter<Property, PropertyAdapter.PropertyViewHolder>(object : DiffUtil.ItemCallback<Property>() {
     override fun areItemsTheSame(a: Property, b: Property) = a.id == b.id
     override fun areContentsTheSame(a: Property, b: Property) = a == b
@@ -45,8 +46,14 @@ class PropertyAdapter(
             }
             if (!p.image_url.isNullOrEmpty()) {
                 Glide.with(b.root.context).load(p.image_url).centerCrop().into(b.ivPropertyImage)
+            } else {
+                b.ivPropertyImage.setImageResource(R.drawable.ic_portfolio)
             }
             b.root.setOnClickListener { onPropertyClick(p) }
+            b.root.setOnLongClickListener {
+                onPropertyLongClick(p)
+                true
+            }
         }
     }
 }

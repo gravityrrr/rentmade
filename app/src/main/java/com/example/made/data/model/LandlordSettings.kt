@@ -5,6 +5,7 @@ data class LandlordSettings(
     val grace_days: Int = 3,
     val auto_overdue_enabled: Boolean = true,
     val reminder_window_days: Int = 3,
+    val collection_cycle: String = "advance",
     val created_at: String? = null,
     val updated_at: String? = null
 )

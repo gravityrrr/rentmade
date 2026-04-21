@@ -7,6 +7,7 @@ import com.example.made.data.remote.RetrofitClient
 import com.example.made.data.repository.SettingsRepository
 import com.example.made.util.Constants
 import com.example.made.util.SessionManager
+import com.example.made.util.toCurrency
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
@@ -54,7 +55,7 @@ class RentReminderWorker(
                                 context = applicationContext,
                                 notificationId = Constants.NOTIFICATION_ID_BASE + index,
                                 tenantName = tenant.name,
-                                amount = "$${tenant.monthly_rent}",
+                                amount = tenant.monthly_rent.toCurrency(),
                                 daysUntilDue = daysUntilDue,
                                 unitNumber = tenant.unit_number,
                                 phone = tenant.phone

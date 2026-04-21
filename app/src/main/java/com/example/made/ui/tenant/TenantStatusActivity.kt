@@ -18,13 +18,21 @@ import com.example.made.databinding.ActivityTenantStatusBinding
 import com.example.made.ui.dashboard.DashboardActivity
 import com.example.made.ui.property.PropertyPortfolioActivity
 import com.example.made.ui.settings.SettingsActivity
+import com.example.made.util.attachTabSwipeNavigation
 import com.example.made.util.Constants
-import com.example.made.util.NavMotion
+import com.example.made.util.navigateTabInstant
 import com.example.made.util.SessionManager
+import com.example.made.util.handleAuthExpired
+import com.example.made.util.parseFlexibleDate
 import com.example.made.util.toast
 import com.example.made.util.toCurrency
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import java.time.YearMonth
+import java.time.temporal.ChronoUnit
+import java.time.format.TextStyle
+import java.time.format.DateTimeParseException
+import java.util.Locale
 import java.util.UUID
 
 class TenantStatusActivity : AppCompatActivity() {
@@ -45,6 +53,7 @@ class TenantStatusActivity : AppCompatActivity() {
                     putExtra(Constants.EXTRA_TENANT_NAME, t.name)
                     putExtra(Constants.EXTRA_TENANT_PHONE, t.phone)
                 })
+                overridePendingTransition(0, 0)
             },
             onMarkPaid = null,
             onEdit = { tenant ->
@@ -53,6 +62,7 @@ class TenantStatusActivity : AppCompatActivity() {
                     putExtra(Constants.EXTRA_TENANT_NAME, tenant.name)
                     putExtra(Constants.EXTRA_TENANT_PHONE, tenant.phone)
                 })
+                overridePendingTransition(0, 0)
             },
             onRemind = { tenant -> handleRemindOrCall(tenant) },
             showMarkPaid = false
@@ -78,13 +88,19 @@ class TenantStatusActivity : AppCompatActivity() {
         binding.bottomNav.selectedItemId = R.id.nav_tenants
         binding.bottomNav.setOnItemSelectedListener { item ->
             when (item.itemId) {
-                R.id.nav_dashboard -> { startSmooth(DashboardActivity::class.java); true }
-                R.id.nav_properties -> { startSmooth(PropertyPortfolioActivity::class.java); true }
+                R.id.nav_dashboard -> { navigateTabInstant(DashboardActivity::class.java); true }
+                R.id.nav_properties -> { navigateTabInstant(PropertyPortfolioActivity::class.java); true }
                 R.id.nav_tenants -> true
-                R.id.nav_setup -> { startSmooth(SettingsActivity::class.java); true }
+                R.id.nav_setup -> { navigateTabInstant(SettingsActivity::class.java); true }
                 else -> false
             }
         }
+        attachTabSwipeNavigation(
+            activity = this,
+            touchSurface = binding.root,
+            onSwipeLeft = { navigateTabInstant(SettingsActivity::class.java) },
+            onSwipeRight = { navigateTabInstant(PropertyPortfolioActivity::class.java) }
+        )
         viewModel.tenants.observe(this) { tenants ->
             allTenants = tenants
             bindTenantStats(tenants)
@@ -95,11 +111,12 @@ class TenantStatusActivity : AppCompatActivity() {
     private fun bindTenantStats(tenants: List<Tenant>) {
         tenantAdapter.submitList(tenants)
         binding.rvTenants.scheduleLayoutAnimation()
-        binding.tvPendingCount.text = "${tenants.count { it.payment_status != "paid" }} TENANTS PENDING"
-    }
-
-    private fun startSmooth(target: Class<*>) {
-        NavMotion.startWithDirection(this, TenantStatusActivity::class.java, target)
+        val dueSoonPending = tenants.count { isDueSoonPending(it) }
+        binding.tvPendingCount.text = getString(
+            R.string.pending_for_month,
+            dueSoonPending,
+            resolvePendingMonthLabel()
+        )
     }
 
     override fun onResume() {
@@ -176,7 +193,10 @@ class TenantStatusActivity : AppCompatActivity() {
                 toast("Marked paid")
                 viewModel.loadTenants(token)
             } else {
-                toast("Unable to mark paid")
+                val message = update.exceptionOrNull()?.message
+                if (!handleAuthExpired(message)) {
+                    toast("Unable to mark paid")
+                }
             }
         }
     }
@@ -188,5 +208,24 @@ class TenantStatusActivity : AppCompatActivity() {
         val day = tenant.due_date.toIntOrNull() ?: return false
         val thisMonth = LocalDate.now().withDayOfMonth(day.coerceIn(1, LocalDate.now().lengthOfMonth()))
         return thisMonth.isBefore(LocalDate.now())
+    }
+
+    private fun isDueSoonPending(tenant: Tenant): Boolean {
+        if (tenant.payment_status.equals(Constants.STATUS_PAID, ignoreCase = true)) return false
+        val due = parseDueDate(tenant.due_date) ?: return false
+        val daysUntilDue = ChronoUnit.DAYS.between(LocalDate.now(), due)
+        return daysUntilDue in 0..3
+    }
+
+    private fun parseDueDate(raw: String): LocalDate? {
+        return parseFlexibleDate(raw)
+    }
+
+    private fun resolvePendingMonthLabel(): String {
+        val session = SessionManager(this)
+        val isAdvance = session.collectionCycle == SessionManager.COLLECTION_CYCLE_ADVANCE
+        val period = if (isAdvance) YearMonth.now().plusMonths(1) else YearMonth.now()
+        val monthName = period.month.getDisplayName(TextStyle.SHORT, Locale.getDefault())
+        return "$monthName ${period.year}"
     }
 }

@@ -27,6 +27,60 @@
             android:text="@string/add_tenant_subtitle"
             style="@style/TextAppearance.Made.BodyMd" />
 
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardTenantImageUpload"
+            style="@style/Widget.Made.Card"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="14dp">
+
+                <de.hdodenhof.circleimageview.CircleImageView
+                    android:id="@+id/ivTenantPreview"
+                    android:layout_width="58dp"
+                    android:layout_height="58dp"
+                    android:src="@drawable/ic_tenants"
+                    app:civ_border_color="@color/colorDivider"
+                    app:civ_border_width="1dp" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Tenant photo"
+                        style="@style/TextAppearance.Made.BodyLg"
+                        android:textColor="@color/colorTextPrimary"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvTenantImageHint"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="Tap to upload"
+                        style="@style/TextAppearance.Made.BodySm" />
+                </LinearLayout>
+
+                <ImageView
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:contentDescription="Select tenant image"
+                    android:src="@drawable/ic_camera_upload" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilTenantName"
             style="@style/Widget.Made.TextInputLayout"
@@ -118,7 +172,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
-            android:hint="@string/hint_due_date"
+            android:hint="Due date (DD-MM-YYYY)"
             app:endIconMode="custom"
             app:endIconDrawable="@android:drawable/ic_menu_my_calendar">
             <com.google.android.material.textfield.TextInputEditText

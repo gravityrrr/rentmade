@@ -209,6 +209,7 @@ execute function public.handle_profile_timestamps();
 
 alter table if exists public.tenants
     add column if not exists unit_id uuid references public.units(id) on delete set null,
+    add column if not exists avatar_url text,
     add column if not exists water_bill numeric not null default 0,
     add column if not exists electricity_bill numeric not null default 0,
     add column if not exists trash_bill numeric not null default 0,
@@ -217,6 +218,9 @@ alter table if exists public.tenants
     add column if not exists aadhar_path text,
     add column if not exists lease_agreement_path text,
     add column if not exists lease_agreement_url text;
+
+alter table if exists public.properties
+    add column if not exists image_url text;
 
 -- Grace period + automation settings per landlord
 create table if not exists public.landlord_settings (
@@ -536,6 +540,14 @@ insert into storage.buckets (id, name, public)
 values ('tenant-documents', 'tenant-documents', false)
 on conflict (id) do nothing;
 
+insert into storage.buckets (id, name, public)
+values ('tenant-images', 'tenant-images', true)
+on conflict (id) do nothing;
+
+insert into storage.buckets (id, name, public)
+values ('property-images', 'property-images', true)
+on conflict (id) do nothing;
+
 drop policy if exists tenant_docs_select_own on storage.objects;
 create policy tenant_docs_select_own
 on storage.objects
@@ -577,6 +589,74 @@ for delete
 to authenticated
 using (
     bucket_id = 'tenant-documents'
+    and (storage.foldername(name))[1] = auth.uid()::text
+);
+
+drop policy if exists tenant_images_insert_own on storage.objects;
+create policy tenant_images_insert_own
+on storage.objects
+for insert
+to authenticated
+with check (
+    bucket_id = 'tenant-images'
+    and (storage.foldername(name))[1] = auth.uid()::text
+);
+
+drop policy if exists tenant_images_update_own on storage.objects;
+create policy tenant_images_update_own
+on storage.objects
+for update
+to authenticated
+using (
+    bucket_id = 'tenant-images'
+    and (storage.foldername(name))[1] = auth.uid()::text
+)
+with check (
+    bucket_id = 'tenant-images'
+    and (storage.foldername(name))[1] = auth.uid()::text
+);
+
+drop policy if exists tenant_images_delete_own on storage.objects;
+create policy tenant_images_delete_own
+on storage.objects
+for delete
+to authenticated
+using (
+    bucket_id = 'tenant-images'
+    and (storage.foldername(name))[1] = auth.uid()::text
+);
+
+drop policy if exists property_images_insert_own on storage.objects;
+create policy property_images_insert_own
+on storage.objects
+for insert
+to authenticated
+with check (
+    bucket_id = 'property-images'
+    and (storage.foldername(name))[1] = auth.uid()::text
+);
+
+drop policy if exists property_images_update_own on storage.objects;
+create policy property_images_update_own
+on storage.objects
+for update
+to authenticated
+using (
+    bucket_id = 'property-images'
+    and (storage.foldername(name))[1] = auth.uid()::text
+)
+with check (
+    bucket_id = 'property-images'
+    and (storage.foldername(name))[1] = auth.uid()::text
+);
+
+drop policy if exists property_images_delete_own on storage.objects;
+create policy property_images_delete_own
+on storage.objects
+for delete
+to authenticated
+using (
+    bucket_id = 'property-images'
     and (storage.foldername(name))[1] = auth.uid()::text
 );
 

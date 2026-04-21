@@ -13,7 +13,9 @@ import com.example.made.ui.auth.LoginActivity
 import com.example.made.ui.dashboard.DashboardActivity
 import com.example.made.ui.property.PropertyPortfolioActivity
 import com.example.made.ui.tenant.TenantStatusActivity
-import com.example.made.util.NavMotion
+import com.example.made.util.attachTabSwipeNavigation
+import com.example.made.util.handleAuthExpired
+import com.example.made.util.navigateTabInstant
 import com.example.made.util.SessionManager
 import kotlinx.coroutines.launch
 
@@ -31,6 +33,7 @@ class SettingsActivity : AppCompatActivity() {
         sessionManager = SessionManager(this)
         setupViews()
         setupBottomNav()
+        setupSwipeNavigation()
         loadRemoteSettings()
     }
 
@@ -38,6 +41,8 @@ class SettingsActivity : AppCompatActivity() {
         binding.switchCompactCards.isChecked = sessionManager.compactMode
         binding.switchReminders.isChecked = sessionManager.rentRemindersEnabled
         binding.switchAutoOverdue.isChecked = sessionManager.autoOverdueEnabled
+        binding.switchCollectionInAdvance.isChecked =
+            sessionManager.collectionCycle == SessionManager.COLLECTION_CYCLE_ADVANCE
         binding.etGraceDays.setText(sessionManager.graceDays.toString())
 
         binding.switchCompactCards.setOnCheckedChangeListener { _, checked ->
@@ -49,6 +54,14 @@ class SettingsActivity : AppCompatActivity() {
         }
         binding.switchAutoOverdue.setOnCheckedChangeListener { _, checked ->
             sessionManager.autoOverdueEnabled = checked
+            saveRemoteSettings()
+        }
+        binding.switchCollectionInAdvance.setOnCheckedChangeListener { _, checked ->
+            sessionManager.collectionCycle = if (checked) {
+                SessionManager.COLLECTION_CYCLE_ADVANCE
+            } else {
+                SessionManager.COLLECTION_CYCLE_ARREARS
+            }
             saveRemoteSettings()
         }
         binding.etGraceDays.setOnFocusChangeListener { _, hasFocus ->
@@ -74,15 +87,15 @@ class SettingsActivity : AppCompatActivity() {
         binding.bottomNav.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_dashboard -> {
-                    startSmooth(DashboardActivity::class.java)
+                    navigateTabInstant(DashboardActivity::class.java)
                     true
                 }
                 R.id.nav_properties -> {
-                    startSmooth(PropertyPortfolioActivity::class.java)
+                    navigateTabInstant(PropertyPortfolioActivity::class.java)
                     true
                 }
                 R.id.nav_tenants -> {
-                    startSmooth(TenantStatusActivity::class.java)
+                    navigateTabInstant(TenantStatusActivity::class.java)
                     true
                 }
                 R.id.nav_setup -> true
@@ -91,8 +104,13 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
-    private fun startSmooth(target: Class<*>) {
-        NavMotion.startWithDirection(this, SettingsActivity::class.java, target)
+    private fun setupSwipeNavigation() {
+        attachTabSwipeNavigation(
+            activity = this,
+            touchSurface = binding.root,
+            onSwipeLeft = null,
+            onSwipeRight = { navigateTabInstant(TenantStatusActivity::class.java) }
+        )
     }
 
     private fun loadRemoteSettings() {
@@ -104,11 +122,16 @@ class SettingsActivity : AppCompatActivity() {
                 if (remote != null) {
                     sessionManager.graceDays = remote.grace_days
                     sessionManager.autoOverdueEnabled = remote.auto_overdue_enabled
+                    sessionManager.collectionCycle = remote.collection_cycle
                     binding.etGraceDays.setText(remote.grace_days.toString())
                     binding.switchAutoOverdue.isChecked = remote.auto_overdue_enabled
+                    binding.switchCollectionInAdvance.isChecked =
+                        remote.collection_cycle != SessionManager.COLLECTION_CYCLE_ARREARS
                 } else {
                     saveRemoteSettings()
                 }
+            }.onFailure { err ->
+                handleAuthExpired(err.message)
             }
         }
     }
@@ -121,10 +144,14 @@ class SettingsActivity : AppCompatActivity() {
             landlord_id = userId,
             grace_days = sessionManager.graceDays,
             auto_overdue_enabled = sessionManager.autoOverdueEnabled,
-            reminder_window_days = 3
+            reminder_window_days = 3,
+            collection_cycle = sessionManager.collectionCycle
         )
         lifecycleScope.launch {
             settingsRepository.upsertSettings(token, payload)
+                .onFailure { err ->
+                    handleAuthExpired(err.message)
+                }
         }
     }
 }

@@ -4,66 +4,86 @@
     style="@style/Widget.Made.Card"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="12dp"
+    android:layout_marginBottom="8dp"
     app:contentPadding="0dp">
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent" android:layout_height="wrap_content">
         <ImageView android:id="@+id/ivPropertyImage"
-            android:layout_width="0dp" android:layout_height="160dp"
+            android:layout_width="86dp" android:layout_height="86dp"
+            android:layout_marginStart="10dp"
+            android:layout_marginTop="10dp"
+            android:layout_marginBottom="10dp"
             android:scaleType="centerCrop" android:background="@drawable/bg_app_surface"
             android:contentDescription="Property"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent" />
+            app:layout_constraintBottom_toBottomOf="parent" />
         <TextView android:id="@+id/tvPropertyStatus"
             android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:layout_margin="12dp" android:text="ACTIVE"
+            android:layout_marginTop="10dp"
+            android:layout_marginEnd="10dp"
+            android:text="ACTIVE"
             android:background="@drawable/bg_status_pill_paid"
-            android:textColor="@color/colorSuccess" android:textSize="10sp"
+            android:textColor="@color/colorSuccess" android:textSize="9sp"
             android:textStyle="bold" android:textAllCaps="true"
-            android:paddingStart="10dp" android:paddingEnd="10dp"
-            android:paddingTop="4dp" android:paddingBottom="4dp"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintBottom_toBottomOf="@+id/ivPropertyImage" />
+            android:paddingStart="8dp" android:paddingEnd="8dp"
+            android:paddingTop="3dp" android:paddingBottom="3dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
         <TextView android:id="@+id/tvPropertyName"
             android:layout_width="0dp" android:layout_height="wrap_content"
-            android:layout_marginTop="16dp" android:layout_marginStart="16dp" android:layout_marginEnd="16dp"
-            style="@style/TextAppearance.Made.HeadlineMd"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toStartOf="@+id/tvOccupancyLabel"
-            app:layout_constraintTop_toBottomOf="@+id/ivPropertyImage" />
+            android:layout_marginStart="10dp"
+            android:layout_marginEnd="10dp"
+            android:layout_marginTop="10dp"
+            style="@style/TextAppearance.Made.BodyLg"
+            android:textStyle="bold"
+            app:layout_constraintStart_toEndOf="@+id/ivPropertyImage"
+            app:layout_constraintEnd_toStartOf="@+id/tvOccupancyValue"
+            app:layout_constraintTop_toTopOf="parent" />
         <TextView android:id="@+id/tvPropertyAddress"
             android:layout_width="0dp" android:layout_height="wrap_content"
-            android:layout_marginTop="4dp" android:layout_marginStart="16dp" android:layout_marginEnd="16dp"
+            android:layout_marginTop="2dp"
+            android:layout_marginStart="10dp"
+            android:layout_marginEnd="10dp"
             style="@style/TextAppearance.Made.BodySm"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/ivPropertyImage"
+            app:layout_constraintEnd_toStartOf="@+id/tvOccupancyValue"
             app:layout_constraintTop_toBottomOf="@+id/tvPropertyName" />
         <TextView android:id="@+id/tvOccupancyLabel"
             android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:layout_marginTop="16dp" android:layout_marginEnd="16dp"
+            android:layout_marginTop="6dp"
+            android:layout_marginEnd="10dp"
             android:text="@string/occupancy" style="@style/TextAppearance.Made.Label"
-            android:textSize="10sp"
+            android:textSize="9sp"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/ivPropertyImage" />
+            app:layout_constraintTop_toBottomOf="@+id/tvPropertyStatus" />
         <TextView android:id="@+id/tvOccupancyValue"
             android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:layout_marginEnd="16dp" android:text="100%"
-            android:textColor="@color/colorPrimary" android:textSize="20sp" android:textStyle="bold"
+            android:layout_marginEnd="10dp" android:text="100%"
+            android:textColor="@color/colorPrimary" android:textSize="16sp" android:textStyle="bold"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/tvOccupancyLabel" />
-        <LinearLayout
+        <LinearLayout android:id="@+id/unitsRow"
             android:layout_width="0dp" android:layout_height="wrap_content"
-            android:layout_margin="16dp" android:orientation="vertical"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginStart="10dp"
+            android:layout_marginTop="6dp"
+            android:layout_marginEnd="10dp"
+            android:layout_marginBottom="10dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            app:layout_constraintStart_toEndOf="@+id/ivPropertyImage"
+            app:layout_constraintEnd_toStartOf="@+id/tvOccupancyValue"
             app:layout_constraintTop_toBottomOf="@+id/tvPropertyAddress"
             app:layout_constraintBottom_toBottomOf="parent">
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                 android:text="@string/units" style="@style/TextAppearance.Made.Label" android:textSize="10sp" />
             <TextView android:id="@+id/tvUnitsCount"
                 android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="24" style="@style/TextAppearance.Made.HeadlineMd" />
+                android:layout_marginStart="6dp"
+                android:text="24"
+                style="@style/TextAppearance.Made.BodyMd"
+                android:textColor="@color/colorTextPrimary"
+                android:textStyle="bold" />
         </LinearLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>
 </com.google.android.material.card.MaterialCardView>

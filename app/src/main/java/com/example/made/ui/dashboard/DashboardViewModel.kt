@@ -4,11 +4,12 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.made.data.model.Payment
+import com.example.made.data.model.BillLedgerEntry
 import com.example.made.data.model.Tenant
 import com.example.made.data.repository.TenantRepository
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 import java.util.Locale
@@ -52,8 +53,8 @@ class DashboardViewModel : ViewModel() {
                 _totalOutstanding.value = 0.0
             }
 
-            tenantRepository.getAllPayments(token).onSuccess { payments ->
-                calculateRevenueTrend(payments)
+            tenantRepository.getAllBillLedger(token).onSuccess { entries ->
+                calculateRevenueTrend(entries)
             }.onFailure {
                 _revenueLabels.value = emptyList()
                 _revenueValues.value = emptyList()
@@ -63,20 +64,31 @@ class DashboardViewModel : ViewModel() {
     }
 
     private fun calculateFinancials(tenants: List<Tenant>) {
-        val expected = tenants.sumOf { it.monthly_rent }
-        val collected = tenants.filter { it.payment_status == "paid" }.sumOf { it.monthly_rent }
+        val activeTenancies = tenants.filter { !it.unit_id.isNullOrBlank() }
+        val expected = activeTenancies.sumOf { it.monthly_rent }
+        val collected = activeTenancies.filter { it.payment_status.equals("paid", ignoreCase = true) }
+            .sumOf { it.monthly_rent }
         _totalExpected.value = expected
         _totalCollected.value = collected
-        _totalOutstanding.value = expected - collected
+        _totalOutstanding.value = (expected - collected).coerceAtLeast(0.0)
     }
 
-    private fun calculateRevenueTrend(payments: List<Payment>) {
+    private fun calculateRevenueTrend(entries: List<BillLedgerEntry>) {
         val formatter = DateTimeFormatter.ofPattern("MMM", Locale.getDefault())
         val sorted = linkedMapOf<String, Double>()
-        payments.forEach { payment ->
-            val parsed = parsePaymentDate(payment.payment_date) ?: return@forEach
-            val key = parsed.toString().substring(0, 7)
-            sorted[key] = (sorted[key] ?: 0.0) + payment.amount
+        entries
+            .filter { it.status.equals("paid", ignoreCase = true) }
+            .forEach { entry ->
+                val key = parseMonthKey(entry.period_month)
+                    ?: entry.paid_on?.let { parseMonthKey(it) }
+                    ?: return@forEach
+                sorted[key] = (sorted[key] ?: 0.0) + entry.total_amount
+            }
+
+        if (sorted.isEmpty()) {
+            _revenueLabels.value = emptyList()
+            _revenueValues.value = emptyList()
+            return
         }
 
         val labels = sorted.keys.toList().takeLast(7).map {
@@ -85,6 +97,25 @@ class DashboardViewModel : ViewModel() {
         val values = sorted.values.toList().takeLast(7).map { it.toFloat() }
         _revenueLabels.value = labels
         _revenueValues.value = values
+    }
+
+    private fun parseMonthKey(value: String): String? {
+        val trimmed = value.trim()
+        if (trimmed.isBlank()) return null
+
+        return try {
+            when {
+                trimmed.length >= 10 && trimmed[4] == '-' && trimmed[7] == '-' -> {
+                    LocalDate.parse(trimmed.take(10)).toString().substring(0, 7)
+                }
+                trimmed.length >= 7 && trimmed[4] == '-' -> {
+                    YearMonth.parse(trimmed.take(7)).toString()
+                }
+                else -> null
+            }
+        } catch (_: DateTimeParseException) {
+            null
+        }
     }
 
     private fun parsePaymentDate(value: String): LocalDate? {

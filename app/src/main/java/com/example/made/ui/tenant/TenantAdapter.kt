@@ -10,6 +10,7 @@ import com.example.made.R
 import com.example.made.data.model.Tenant
 import com.example.made.databinding.ItemTenantCardBinding
 import com.example.made.util.Constants
+import com.example.made.util.toDisplayDateOrSelf
 import com.example.made.util.toCurrency
 
 class TenantAdapter(
@@ -34,7 +35,7 @@ class TenantAdapter(
             b.tvAvatar.text = initials
             b.tvTenantName.text = t.name
             b.tvUnitInfo.text = "${t.unit_number} · ${t.property_name}"
-            b.tvMetaInfo.text = "Due ${t.due_date} · ${t.phone}"
+            b.tvMetaInfo.text = "Due ${t.due_date.toDisplayDateOrSelf()} · ${t.phone}"
             b.tvRentAmount.text = t.monthly_rent.toCurrency()
             b.btnRemind.setTextColor(b.root.context.getColor(R.color.colorPrimary))
             b.btnRemind.text = b.root.context.getString(R.string.edit)

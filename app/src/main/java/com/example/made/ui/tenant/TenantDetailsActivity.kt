@@ -9,22 +9,35 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.bumptech.glide.Glide
 import com.example.made.R
 import com.example.made.data.model.BillLedgerEntry
 import com.example.made.databinding.DialogEditBillLedgerBinding
-import com.google.android.material.transition.platform.MaterialFadeThrough
 import com.example.made.data.model.Payment
 import com.example.made.data.model.Tenant
 import com.example.made.data.repository.DocumentVaultRepository
 import com.example.made.data.repository.TenantRepository
 import com.example.made.databinding.ActivityTenantDetailsBinding
+import com.example.made.ui.dashboard.DashboardActivity
+import com.example.made.ui.property.PropertyPortfolioActivity
+import com.example.made.ui.settings.SettingsActivity
 import com.example.made.util.Constants
 import com.example.made.util.SessionManager
+import com.example.made.util.attachTabSwipeNavigation
+import com.example.made.util.handleAuthExpired
+import com.example.made.util.navigateTabInstant
+import com.example.made.util.toDisplayDateOrSelf
+import com.example.made.util.toAmountOrNull
+import com.example.made.util.toAmountOrZero
+import com.example.made.util.toStorageIsoDateOrSelf
+import com.example.made.util.toGroupedNumber
 import com.example.made.util.toast
 import com.example.made.util.toCurrency
 import com.google.android.material.tabs.TabLayout
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import java.time.YearMonth
+import java.time.format.DateTimeParseException
 import java.util.UUID
 
 class TenantDetailsActivity : AppCompatActivity() {
@@ -45,12 +58,8 @@ class TenantDetailsActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setupWindowTransitions()
         binding = ActivityTenantDetailsBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        binding.root.alpha = 0f
-        binding.root.translationY = 18f
-        binding.root.animate().alpha(1f).translationY(0f).setDuration(300L).start()
 
         val tenantId = intent.getStringExtra(Constants.EXTRA_TENANT_ID) ?: ""
         val tenantName = intent.getStringExtra(Constants.EXTRA_TENANT_NAME) ?: ""
@@ -87,13 +96,50 @@ class TenantDetailsActivity : AppCompatActivity() {
         binding.btnSaveTenantMeta.setOnClickListener { saveTenantMeta() }
         binding.btnWhatsappReminder.setOnClickListener { currentTenant?.let { sendWhatsappReminder(it) } }
         binding.btnCallTenant.setOnClickListener { currentTenant?.let { callTenant(it) } }
-        binding.btnMarkPaidTenant.setOnClickListener { currentTenant?.let { markPaid(it) } }
-        binding.btnUploadAadhar.setOnClickListener { pickAadhar.launch("application/pdf") }
-        binding.btnUploadLease.setOnClickListener { pickLease.launch("application/pdf") }
+        binding.btnMarkPaidTenant.setOnClickListener { currentTenant?.let { togglePaymentStatus(it) } }
+        binding.btnUploadAadhar.setOnClickListener { pickAadhar.launch("*/*") }
+        binding.btnUploadLease.setOnClickListener { pickLease.launch("*/*") }
         binding.btnOpenAadhar.setOnClickListener { openSignedUrl(signedAadharUrl) }
         binding.btnOpenLease.setOnClickListener { openSignedUrl(signedLeaseUrl) }
 
+        setupBottomNav()
+        setupSwipeNavigation()
+
         loadTenantDetails(tenantId)
+    }
+
+    private fun setupBottomNav() {
+        binding.bottomNav.selectedItemId = R.id.nav_tenants
+        binding.bottomNav.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.nav_dashboard -> {
+                    navigateTabInstant(DashboardActivity::class.java)
+                    true
+                }
+                R.id.nav_properties -> {
+                    navigateTabInstant(PropertyPortfolioActivity::class.java)
+                    true
+                }
+                R.id.nav_tenants -> {
+                    navigateTabInstant(TenantStatusActivity::class.java)
+                    true
+                }
+                R.id.nav_setup -> {
+                    navigateTabInstant(SettingsActivity::class.java)
+                    true
+                }
+                else -> false
+            }
+        }
+    }
+
+    private fun setupSwipeNavigation() {
+        attachTabSwipeNavigation(
+            activity = this,
+            touchSurface = binding.root,
+            onSwipeLeft = { navigateTabInstant(SettingsActivity::class.java) },
+            onSwipeRight = { navigateTabInstant(PropertyPortfolioActivity::class.java) }
+        )
     }
 
     private fun loadTenantDetails(tenantId: String) {
@@ -107,37 +153,46 @@ class TenantDetailsActivity : AppCompatActivity() {
                     binding.tvEmail.text = it.email
                     binding.tvPhone.text = it.phone
                     binding.tvUnitProperty.text = "${it.unit_number} · ${it.property_name}".uppercase()
+                    if (!it.avatar_url.isNullOrBlank()) {
+                        Glide.with(this@TenantDetailsActivity)
+                            .load(it.avatar_url)
+                            .centerCrop()
+                            .into(binding.ivTenantAvatar)
+                    } else {
+                        binding.ivTenantAvatar.setImageResource(R.drawable.ic_tenants)
+                    }
                     binding.etAadhar.setText(it.aadhar_number.orEmpty())
-                    binding.etWaterBill.setText(it.water_bill.toString())
-                    binding.etElectricityBill.setText(it.electricity_bill.toString())
-                    binding.etTrashBill.setText(it.trash_bill.toString())
-                    binding.etDueDateDetails.setText(it.due_date)
+                    binding.etWaterBill.setText(it.water_bill.toGroupedNumber())
+                    binding.etElectricityBill.setText(it.electricity_bill.toGroupedNumber())
+                    binding.etTrashBill.setText(it.trash_bill.toGroupedNumber())
+                    binding.etDueDateDetails.setText(it.due_date.toDisplayDateOrSelf())
+                    updatePaymentActionButton(it)
                     refreshSignedUrls(it)
                 }
-            }.onFailure {
-                toast("Unable to load tenant details")
+            }.onFailure { err ->
+                if (!handleAuthExpired(err.message)) {
+                    toast("Unable to load tenant details")
+                }
             }
 
             repo.getPaymentsByTenant(sm.authToken ?: "", tenantId).onSuccess {
                 paymentAdapter.submitList(it)
                 binding.rvPayments.scheduleLayoutAnimation()
-            }.onFailure {
+            }.onFailure { err ->
                 paymentAdapter.submitList(emptyList())
-                toast("Unable to load payments")
+                if (!handleAuthExpired(err.message)) {
+                    toast("Unable to load payments")
+                }
             }
 
             repo.getBillLedgerByTenant(sm.authToken ?: "", tenantId).onSuccess {
                 billLedgerAdapter.submitList(it)
                 binding.rvBillLedger.scheduleLayoutAnimation()
-            }.onFailure {
+            }.onFailure { err ->
                 billLedgerAdapter.submitList(emptyList())
+                handleAuthExpired(err.message)
             }
         }
-    }
-
-    private fun setupWindowTransitions() {
-        window.enterTransition = MaterialFadeThrough().apply { duration = 260L }
-        window.returnTransition = MaterialFadeThrough().apply { duration = 220L }
     }
 
     private fun saveTenantMeta() {
@@ -146,30 +201,33 @@ class TenantDetailsActivity : AppCompatActivity() {
         lifecycleScope.launch {
             val payload = mapOf(
                 "aadhar_number" to binding.etAadhar.text?.toString()?.trim().orEmpty(),
-                "water_bill" to (binding.etWaterBill.text?.toString()?.toDoubleOrNull() ?: 0.0),
-                "electricity_bill" to (binding.etElectricityBill.text?.toString()?.toDoubleOrNull() ?: 0.0),
-                "trash_bill" to (binding.etTrashBill.text?.toString()?.toDoubleOrNull() ?: 0.0),
-                "due_date" to binding.etDueDateDetails.text?.toString()?.trim().orEmpty()
+                "water_bill" to binding.etWaterBill.text?.toString().toAmountOrZero(),
+                "electricity_bill" to binding.etElectricityBill.text?.toString().toAmountOrZero(),
+                "trash_bill" to binding.etTrashBill.text?.toString().toAmountOrZero(),
+                "due_date" to binding.etDueDateDetails.text?.toString()?.trim().orEmpty().toStorageIsoDateOrSelf()
             )
             val result = TenantRepository().updateTenant(token, tenant.id, payload)
             if (result.isSuccess) {
                 toast("Tenant details saved")
                 loadTenantDetails(tenant.id)
             } else {
-                toast("Unable to save details")
+                val message = result.exceptionOrNull()?.message
+                if (!handleAuthExpired(message)) {
+                    toast("Unable to save details")
+                }
             }
         }
     }
 
     private fun sendWhatsappReminder(tenant: Tenant) {
-        val water = binding.etWaterBill.text?.toString()?.toDoubleOrNull() ?: tenant.water_bill
-        val electricity = binding.etElectricityBill.text?.toString()?.toDoubleOrNull() ?: tenant.electricity_bill
-        val trash = binding.etTrashBill.text?.toString()?.toDoubleOrNull() ?: tenant.trash_bill
+        val water = binding.etWaterBill.text?.toString().toAmountOrNull() ?: tenant.water_bill
+        val electricity = binding.etElectricityBill.text?.toString().toAmountOrNull() ?: tenant.electricity_bill
+        val trash = binding.etTrashBill.text?.toString().toAmountOrNull() ?: tenant.trash_bill
         val rent = tenant.monthly_rent
         val total = rent + water + electricity + trash
         val msg = "Hi ${tenant.name}, this is a payment reminder. " +
             "Rent: ${rent.toCurrency()}, Water: ${water.toCurrency()}, Electricity: ${electricity.toCurrency()}, " +
-            "Trash: ${trash.toCurrency()}. Total due: ${total.toCurrency()} by ${binding.etDueDateDetails.text}."
+            "Trash: ${trash.toCurrency()}. Total due: ${total.toCurrency()} by ${binding.etDueDateDetails.text?.toString().orEmpty().toDisplayDateOrSelf()}."
         val url = "https://wa.me/${tenant.phone.replace("+", "")}?text=${Uri.encode(msg)}"
         try {
             startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
@@ -182,12 +240,23 @@ class TenantDetailsActivity : AppCompatActivity() {
         startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:${tenant.phone}")))
     }
 
+    private fun togglePaymentStatus(tenant: Tenant) {
+        if (tenant.payment_status.equals(Constants.STATUS_PAID, ignoreCase = true)) {
+            markUnpaid(tenant)
+        } else {
+            markPaid(tenant)
+        }
+    }
+
     private fun markPaid(tenant: Tenant) {
         val token = SessionManager(this).authToken.orEmpty()
+        if (token.isBlank()) return
         val now = LocalDate.now().toString()
-        val water = binding.etWaterBill.text?.toString()?.toDoubleOrNull() ?: tenant.water_bill
-        val electricity = binding.etElectricityBill.text?.toString()?.toDoubleOrNull() ?: tenant.electricity_bill
-        val trash = binding.etTrashBill.text?.toString()?.toDoubleOrNull() ?: tenant.trash_bill
+        val periodMonth = LocalDate.now().withDayOfMonth(1).toString()
+        val water = binding.etWaterBill.text?.toString().toAmountOrNull() ?: tenant.water_bill
+        val electricity = binding.etElectricityBill.text?.toString().toAmountOrNull() ?: tenant.electricity_bill
+        val trash = binding.etTrashBill.text?.toString().toAmountOrNull() ?: tenant.trash_bill
+        val dueDate = binding.etDueDateDetails.text?.toString()?.trim().orEmpty().toStorageIsoDateOrSelf()
         val total = tenant.monthly_rent + water + electricity + trash
 
         lifecycleScope.launch {
@@ -199,7 +268,74 @@ class TenantDetailsActivity : AppCompatActivity() {
                 "electricity_bill" to electricity,
                 "trash_bill" to trash
             ))
-            if (update.isSuccess) {
+            if (update.isFailure) {
+                val message = update.exceptionOrNull()?.message
+                if (!handleAuthExpired(message)) {
+                    toast("Unable to update payment")
+                }
+                return@launch
+            }
+
+            val ledgerResult = repo.getBillLedgerByTenant(token, tenant.id)
+            if (ledgerResult.isFailure) {
+                val message = ledgerResult.exceptionOrNull()?.message
+                if (!handleAuthExpired(message)) {
+                    toast("Unable to sync bill ledger")
+                }
+                return@launch
+            }
+
+            val monthlyEntry = ledgerResult.getOrNull()
+                .orEmpty()
+                .firstOrNull { normalizeMonthKey(it.period_month) == periodMonth }
+
+            val ledgerSync = if (monthlyEntry == null) {
+                repo.addBillLedgerEntry(
+                    token,
+                    BillLedgerEntry(
+                        id = UUID.randomUUID().toString(),
+                        tenant_id = tenant.id,
+                        property_id = tenant.property_id,
+                        unit_id = tenant.unit_id,
+                        period_month = periodMonth,
+                        due_date = dueDate,
+                        rent_amount = tenant.monthly_rent,
+                        water_amount = water,
+                        electricity_amount = electricity,
+                        trash_amount = trash,
+                        total_amount = total,
+                        status = Constants.STATUS_PAID,
+                        paid_on = now
+                    )
+                ).isSuccess
+            } else {
+                repo.updateBillLedgerEntry(
+                    token,
+                    monthlyEntry.id,
+                    mapOf(
+                        "due_date" to dueDate,
+                        "rent_amount" to tenant.monthly_rent,
+                        "water_amount" to water,
+                        "electricity_amount" to electricity,
+                        "trash_amount" to trash,
+                        "total_amount" to total,
+                        "status" to Constants.STATUS_PAID,
+                        "paid_on" to now
+                    )
+                ).isSuccess
+            }
+
+            if (!ledgerSync) {
+                toast("Payment saved, but ledger sync failed")
+                loadTenantDetails(tenant.id)
+                return@launch
+            }
+
+            val paymentsResult = repo.getPaymentsByTenant(token, tenant.id)
+            val hasPaymentForThisMonth = paymentsResult.getOrNull().orEmpty().any {
+                parseYearMonth(it.payment_date) == YearMonth.now()
+            }
+            if (!hasPaymentForThisMonth) {
                 repo.addPayment(
                     token,
                     Payment(
@@ -217,29 +353,52 @@ class TenantDetailsActivity : AppCompatActivity() {
                         status = Constants.STATUS_PAID
                     )
                 )
-                repo.addBillLedgerEntry(
-                    token,
-                    BillLedgerEntry(
-                        id = UUID.randomUUID().toString(),
-                        tenant_id = tenant.id,
-                        property_id = tenant.property_id,
-                        unit_id = tenant.unit_id,
-                        period_month = LocalDate.now().withDayOfMonth(1).toString(),
-                        due_date = binding.etDueDateDetails.text?.toString().orEmpty(),
-                        rent_amount = tenant.monthly_rent,
-                        water_amount = water,
-                        electricity_amount = electricity,
-                        trash_amount = trash,
-                        total_amount = total,
-                        status = Constants.STATUS_PAID,
-                        paid_on = now
-                    )
-                )
-                toast("Payment updated")
-                loadTenantDetails(tenant.id)
-            } else {
-                toast("Unable to update payment")
             }
+
+            toast("Marked as paid")
+            loadTenantDetails(tenant.id)
+        }
+    }
+
+    private fun markUnpaid(tenant: Tenant) {
+        val token = SessionManager(this).authToken.orEmpty()
+        if (token.isBlank()) return
+        val periodMonth = LocalDate.now().withDayOfMonth(1).toString()
+
+        lifecycleScope.launch {
+            val repo = TenantRepository()
+            val update = repo.updateTenant(
+                token,
+                tenant.id,
+                mapOf(
+                    "payment_status" to Constants.STATUS_PENDING,
+                    "last_payment_date" to null
+                )
+            )
+            if (update.isFailure) {
+                val message = update.exceptionOrNull()?.message
+                if (!handleAuthExpired(message)) {
+                    toast("Unable to mark unpaid")
+                }
+                return@launch
+            }
+
+            repo.getBillLedgerByTenant(token, tenant.id).getOrNull()
+                .orEmpty()
+                .firstOrNull { normalizeMonthKey(it.period_month) == periodMonth }
+                ?.let { entry ->
+                    repo.updateBillLedgerEntry(
+                        token,
+                        entry.id,
+                        mapOf(
+                            "status" to Constants.STATUS_PENDING,
+                            "paid_on" to null
+                        )
+                    )
+                }
+
+            toast("Marked as unpaid")
+            loadTenantDetails(tenant.id)
         }
     }
 
@@ -260,7 +419,10 @@ class TenantDetailsActivity : AppCompatActivity() {
                 fileUri = uri
             )
             if (uploadedPath.isFailure) {
-                toast("Upload failed")
+                val message = uploadedPath.exceptionOrNull()?.message
+                if (!handleAuthExpired(message)) {
+                    toast(message ?: "Upload failed")
+                }
                 return@launch
             }
             val path = uploadedPath.getOrNull().orEmpty()
@@ -274,7 +436,10 @@ class TenantDetailsActivity : AppCompatActivity() {
                 toast("Document uploaded")
                 loadTenantDetails(tenant.id)
             } else {
-                toast("Could not save document link")
+                val message = updated.exceptionOrNull()?.message
+                if (!handleAuthExpired(message)) {
+                    toast("Could not save document link")
+                }
             }
         }
     }
@@ -290,6 +455,13 @@ class TenantDetailsActivity : AppCompatActivity() {
             tenant.lease_agreement_path?.takeIf { it.isNotBlank() }?.let {
                 signedLeaseUrl = docRepo.createSignedUrl(token, it).getOrNull()
             }
+
+            val hasAadhar = !signedAadharUrl.isNullOrBlank()
+            val hasLease = !signedLeaseUrl.isNullOrBlank()
+            binding.tvAadharDocStatus.text = if (hasAadhar) "Uploaded" else "Not uploaded"
+            binding.tvLeaseDocStatus.text = if (hasLease) "Uploaded" else "Not uploaded"
+            binding.btnOpenAadhar.visibility = if (hasAadhar) android.view.View.VISIBLE else android.view.View.GONE
+            binding.btnOpenLease.visibility = if (hasLease) android.view.View.VISIBLE else android.view.View.GONE
         }
     }
 
@@ -304,20 +476,20 @@ class TenantDetailsActivity : AppCompatActivity() {
     private fun showEditLedgerDialog(entry: BillLedgerEntry) {
         val d = DialogEditBillLedgerBinding.inflate(layoutInflater)
         d.etDueDate.setText(entry.due_date)
-        d.etRent.setText(entry.rent_amount.toString())
-        d.etWater.setText(entry.water_amount.toString())
-        d.etElectricity.setText(entry.electricity_amount.toString())
-        d.etTrash.setText(entry.trash_amount.toString())
+        d.etRent.setText(entry.rent_amount.toGroupedNumber())
+        d.etWater.setText(entry.water_amount.toGroupedNumber())
+        d.etElectricity.setText(entry.electricity_amount.toGroupedNumber())
+        d.etTrash.setText(entry.trash_amount.toGroupedNumber())
 
         AlertDialog.Builder(this)
             .setTitle(getString(R.string.edit_ledger_entry))
             .setView(d.root)
             .setNegativeButton(getString(R.string.btn_cancel), null)
             .setPositiveButton(getString(R.string.btn_save_property)) { _, _ ->
-                val rent = d.etRent.text?.toString()?.toDoubleOrNull() ?: 0.0
-                val water = d.etWater.text?.toString()?.toDoubleOrNull() ?: 0.0
-                val electricity = d.etElectricity.text?.toString()?.toDoubleOrNull() ?: 0.0
-                val trash = d.etTrash.text?.toString()?.toDoubleOrNull() ?: 0.0
+                val rent = d.etRent.text?.toString().toAmountOrZero()
+                val water = d.etWater.text?.toString().toAmountOrZero()
+                val electricity = d.etElectricity.text?.toString().toAmountOrZero()
+                val trash = d.etTrash.text?.toString().toAmountOrZero()
                 val dueDate = d.etDueDate.text?.toString()?.trim().orEmpty()
                 val total = rent + water + electricity + trash
                 val payload = mapOf(
@@ -335,7 +507,10 @@ class TenantDetailsActivity : AppCompatActivity() {
                         toast("Ledger updated")
                         currentTenant?.let { loadTenantDetails(it.id) }
                     } else {
-                        toast("Unable to update ledger")
+                        val message = updated.exceptionOrNull()?.message
+                        if (!handleAuthExpired(message)) {
+                            toast("Unable to update ledger")
+                        }
                     }
                 }
             }
@@ -356,13 +531,51 @@ class TenantDetailsActivity : AppCompatActivity() {
                         mapOf("status" to Constants.STATUS_PENDING, "paid_on" to null)
                     )
                     if (updated.isSuccess) {
-                        toast("Entry reversed")
-                        currentTenant?.let { loadTenantDetails(it.id) }
+                        currentTenant?.let { tenant ->
+                            if (normalizeMonthKey(entry.period_month) == LocalDate.now().withDayOfMonth(1).toString()) {
+                                TenantRepository().updateTenant(
+                                    token,
+                                    tenant.id,
+                                    mapOf(
+                                        "payment_status" to Constants.STATUS_PENDING,
+                                        "last_payment_date" to null
+                                    )
+                                )
+                            }
+                            toast("Entry reversed")
+                            loadTenantDetails(tenant.id)
+                        }
                     } else {
-                        toast("Unable to reverse entry")
+                        val message = updated.exceptionOrNull()?.message
+                        if (!handleAuthExpired(message)) {
+                            toast("Unable to reverse entry")
+                        }
                     }
                 }
             }
             .show()
+    }
+
+    private fun updatePaymentActionButton(tenant: Tenant) {
+        val isPaid = tenant.payment_status.equals(Constants.STATUS_PAID, ignoreCase = true)
+        binding.btnMarkPaidTenant.text = if (isPaid) "Mark Unpaid" else "Mark Paid"
+    }
+
+    private fun parseYearMonth(value: String): YearMonth? {
+        val trimmed = value.trim()
+        if (trimmed.isBlank()) return null
+        return try {
+            when {
+                trimmed.length >= 10 && trimmed[4] == '-' && trimmed[7] == '-' -> YearMonth.from(LocalDate.parse(trimmed.take(10)))
+                trimmed.length >= 7 && trimmed[4] == '-' -> YearMonth.parse(trimmed.take(7))
+                else -> null
+            }
+        } catch (_: DateTimeParseException) {
+            null
+        }
+    }
+
+    private fun normalizeMonthKey(value: String): String? {
+        return parseYearMonth(value)?.atDay(1)?.toString()
     }
 }

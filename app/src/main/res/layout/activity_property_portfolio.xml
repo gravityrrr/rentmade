@@ -9,44 +9,77 @@
         app:layout_constraintTop_toTopOf="parent" app:layout_constraintBottom_toTopOf="@+id/bottomNav"
         app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toEndOf="parent">
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:orientation="vertical" android:padding="20dp">
+            android:orientation="vertical" android:padding="18dp">
             <include android:id="@+id/headerLayout" layout="@layout/layout_header" />
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:layout_marginTop="24dp" android:text="@string/portfolio_overview"
-                style="@style/TextAppearance.Made.Label" />
+                android:layout_marginTop="20dp" android:text="@string/properties_title"
+                style="@style/TextAppearance.Made.HeadlineXL" />
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:layout_marginTop="4dp" android:text="@string/properties_title"
-                style="@style/TextAppearance.Made.HeadlineXL" android:layout_marginBottom="16dp" />
-            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:orientation="horizontal" android:layout_marginBottom="20dp">
-                <com.google.android.material.card.MaterialCardView style="@style/Widget.Made.Card"
-                    android:layout_width="0dp" android:layout_height="wrap_content"
-                    android:layout_weight="1" android:layout_marginEnd="6dp">
-                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-                        android:orientation="vertical" android:padding="16dp" android:gravity="center">
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                            android:text="@string/total_assets" style="@style/TextAppearance.Made.Label" />
-                        <TextView android:id="@+id/tvTotalAssets"
-                            android:layout_width="wrap_content" android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp" android:text="0"
-                            style="@style/TextAppearance.Made.HeadlineLg" />
+                android:layout_marginTop="4dp" android:text="@string/portfolio_overview"
+                style="@style/TextAppearance.Made.BodyMd" android:layout_marginBottom="14dp" />
+            <com.google.android.material.card.MaterialCardView style="@style/Widget.Made.Card.Glow"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="14dp">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="12dp">
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/total_assets"
+                            style="@style/TextAppearance.Made.Label" />
+                        <TextView
+                            android:id="@+id/tvTotalAssets"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="0"
+                            style="@style/TextAppearance.Made.HeadlineMd" />
                     </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-                <com.google.android.material.card.MaterialCardView style="@style/Widget.Made.Card"
-                    android:layout_width="0dp" android:layout_height="wrap_content"
-                    android:layout_weight="1" android:layout_marginStart="6dp">
-                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-                        android:orientation="vertical" android:padding="16dp" android:gravity="center">
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                            android:text="@string/avg_occupancy" style="@style/TextAppearance.Made.Label" />
-                        <TextView android:id="@+id/tvAvgOccupancy"
-                            android:layout_width="wrap_content" android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp" android:text="0%"
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginHorizontal="8dp"
+                        android:background="@color/colorDivider" />
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/avg_occupancy"
+                            style="@style/TextAppearance.Made.Label" />
+                        <TextView
+                            android:id="@+id/tvAvgOccupancy"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="0%"
                             android:textColor="@color/colorSecondary"
-                            style="@style/TextAppearance.Made.HeadlineLg" />
+                            style="@style/TextAppearance.Made.HeadlineMd" />
                     </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-            </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+            <TextView
+                android:id="@+id/tvEmptyProperties"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:gravity="center"
+                android:text="No properties yet. Tap + to add your first property."
+                android:textColor="@color/colorTextMuted"
+                android:textSize="14sp"
+                android:visibility="gone" />
             <androidx.recyclerview.widget.RecyclerView android:id="@+id/rvProperties"
                 android:layout_width="match_parent" android:layout_height="wrap_content"
                 android:nestedScrollingEnabled="false"

@@ -50,9 +50,30 @@ class TenantRepository {
 
     suspend fun addTenant(token: String, tenant: Tenant): Result<Tenant?> {
         return try {
-            val response = api.addTenant("Bearer $token", tenant = tenant)
+            val payload = linkedMapOf<String, Any?>(
+                "property_id" to tenant.property_id,
+                "name" to tenant.name,
+                "email" to tenant.email,
+                "phone" to tenant.phone,
+                "unit_number" to tenant.unit_number,
+                "monthly_rent" to tenant.monthly_rent,
+                "due_date" to tenant.due_date,
+                "payment_status" to tenant.payment_status,
+                "avatar_url" to tenant.avatar_url
+            )
+            tenant.unit_id?.let { payload["unit_id"] = it }
+
+            val response = api.addTenant("Bearer $token", payload = payload)
             if (response.isSuccessful) Result.success(response.body()?.firstOrNull())
-            else Result.failure(Exception("Failed: ${response.code()}"))
+            else {
+                val errorBody = response.errorBody()?.string().orEmpty()
+                val message = if (errorBody.isNotBlank()) {
+                    "Failed: ${response.code()} - $errorBody"
+                } else {
+                    "Failed: ${response.code()}"
+                }
+                Result.failure(Exception(message))
+            }
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -100,6 +121,15 @@ class TenantRepository {
     suspend fun getBillLedgerByTenant(token: String, tenantId: String): Result<List<BillLedgerEntry>> {
         return try {
             val data = api.getBillLedgerByTenant("Bearer $token", tenantId = "eq.$tenantId")
+            Result.success(data)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getAllBillLedger(token: String): Result<List<BillLedgerEntry>> {
+        return try {
+            val data = api.getBillLedger("Bearer $token")
             Result.success(data)
         } catch (e: Exception) {
             Result.failure(e)

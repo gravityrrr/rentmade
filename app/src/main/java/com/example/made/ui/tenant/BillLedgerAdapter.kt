@@ -9,6 +9,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.made.R
 import com.example.made.data.model.BillLedgerEntry
 import com.example.made.databinding.ItemBillLedgerBinding
+import com.example.made.util.toDisplayDateOrSelf
 import com.example.made.util.toCurrency
 
 class BillLedgerAdapter(
@@ -29,8 +30,8 @@ class BillLedgerAdapter(
 
     inner class LedgerVH(private val b: ItemBillLedgerBinding) : RecyclerView.ViewHolder(b.root) {
         fun bind(item: BillLedgerEntry) {
-            b.tvPeriod.text = item.period_month
-            b.tvDueDate.text = "Due: ${item.due_date}"
+            b.tvPeriod.text = item.period_month.toDisplayDateOrSelf()
+            b.tvDueDate.text = "Due: ${item.due_date.toDisplayDateOrSelf()}"
             b.tvSplit.text = "Rent ${item.rent_amount.toCurrency()} • Water ${item.water_amount.toCurrency()} • " +
                 "Electricity ${item.electricity_amount.toCurrency()} • Trash ${item.trash_amount.toCurrency()}"
             b.tvTotal.text = "Total ${item.total_amount.toCurrency()}"
